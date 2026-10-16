@@ -41,7 +41,7 @@ spec:
           - claim: azp
             header: {{ .Values.securityPolicy.jwt.clientHeader | quote }}
 {{- end }}
-{{- if .Values.httpRoute.enabled }}
+{{- if and .Values.httpRoute.enabled .Values.httpRoute.create }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy

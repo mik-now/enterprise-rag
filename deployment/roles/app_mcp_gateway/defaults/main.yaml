@@ -21,6 +21,25 @@ mcp_helm_default_values_file: "{{ deployment_dir }}/components/mcp_gateway/value
 # (gateway_request_timeout, 600s by default), which traffic on the stream resets.
 mcp_route_timeout: "0s"
 
+# Published with the platform's gateway_publish on the apex host. Route names are
+# the ones the chart's JWT SecurityPolicy and rate-limit policy target.
+_mcp_publications:
+  - name: mcp-gateway
+    route: mcp-gateway-route
+    auth: gateway
+    rules:
+      - matches: [{path: {type: PathPrefix, value: /api/v1/mcp}}]
+        timeouts: {request: "{{ mcp_route_timeout }}", backendRequest: "{{ mcp_route_timeout }}"}
+        backendRefs: "{{ [{'name': 'mcp-gateway-svc', 'port': mcp_service_port | int}] }}"
+  - name: mcp-gateway-health
+    route: mcp-gateway-health-route
+    auth: none
+    rules:
+      - matches:
+          - {path: {type: Exact, value: /api/v1/mcp/health}}
+          - {path: {type: Exact, value: /api/v1/mcp/.well-known/oauth-protected-resource}}
+        backendRefs: "{{ [{'name': 'mcp-gateway-svc', 'port': mcp_service_port | int}] }}"
+
 # --- Caller authentication (OAuth 2.0 resource server) ---
 # Agents fetch their own token from Keycloak and send it as a Bearer token. The route's
 # SecurityPolicy validates it at the edge and the service verifies it again against the
@@ -89,8 +108,8 @@ rag_tmp_dir: "{{ tmp_dir }}/rag"                   # app_pre_install (derived fr
 istio_enabled: false                               # global
 enforce_pss: false                                 # global
 secure_logs: true                                  # global
-envoy_gateway_namespace: "envoy-gateway-system"    # core/envoy_gateway
-gateway_name: "eg-gateway"                         # core/envoy_gateway
-gateway_namespace: "envoy-gateway-system"          # core/envoy_gateway
-gateway_tls_mode: "selfsigned"                     # core/envoy_gateway
-gateway_tls_secret_name: "gateway-tls"             # core/envoy_gateway
+envoy_gateway_namespace: "{{ gateway_envoy_namespace | default('envoy-gateway-system') }}"  # core/gateway_envoy
+gateway_name: "eg-gateway"                         # core/gateway
+gateway_namespace: "envoy-gateway-system"          # core/gateway
+gateway_tls_mode: "selfsigned"                     # core/gateway
+gateway_tls_secret_name: "gateway-tls"             # core/gateway

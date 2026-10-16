@@ -2,6 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+- name: "app_mcp_gateway | teardown | Unpublish the MCP routes from the gateway"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: unpublish
+    gateway_publish_name: "{{ item.name }}"
+    gateway_publish_namespace: "{{ mcp_namespace }}"
+    gateway_publish_attach: apex
+    gateway_publish_route_name: "{{ item.route }}"
+  loop: "{{ _mcp_publications }}"
+  loop_control:
+    label: "{{ item.route }}"
+
 - name: "app_mcp_gateway | Uninstall Helm chart"
   kubernetes.core.helm:
     name: "{{ mcp_helm_release_name }}"

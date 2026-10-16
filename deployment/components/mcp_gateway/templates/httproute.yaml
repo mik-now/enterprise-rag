@@ -11,8 +11,12 @@ the service serves the same prefix.
 The unauthenticated route uses Exact matches, which take precedence over the prefix
 match, so only those two paths escape JWT enforcement. The metadata document has to be
 reachable without a token or the discovery it exists for cannot happen.
+
+httpRoute.create: false leaves both routes (and the health route's exemption) to
+whoever publishes them - the Ansible deployment does it through the platform's
+gateway_publish role - while the JWT and rate-limit policies stay here.
 */ -}}
-{{- if .Values.httpRoute.enabled }}
+{{- if and .Values.httpRoute.enabled .Values.httpRoute.create }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

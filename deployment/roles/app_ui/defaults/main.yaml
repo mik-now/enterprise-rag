@@ -18,6 +18,10 @@ ui_helm_release_name: "chatqna-app"
 ui_helm_chart_directory: "{{ deployment_dir }}/components/ui"
 ui_helm_default_values_file: "{{ deployment_dir }}/components/ui/values.yaml"
 
+# --- Gateway publication (platform gateway_publish, apex host) ---
+ui_publish_name: "erag-ui"
+ui_route_name: "erag-ui-route"
+
 # --- UI runtime config (rendered into the chart's extraUiConfigVars block) ---
 ui_keycloak_realm: "EnterpriseRAG"
 ui_keycloak_client_id: "EnterpriseRAG-oidc"

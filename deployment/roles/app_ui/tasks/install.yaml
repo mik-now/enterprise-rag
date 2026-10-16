@@ -66,3 +66,21 @@
   until: helm_repo_install_result is succeeded
   retries: "{{ helm_retries }}"
   delay: 15
+
+# After the chart: a release from before this change still owns a route of its
+# own, which the upgrade above removes. No gateway auth: the browser loads the
+# app without a token, and the Keycloak login runs inside it.
+- name: "app_ui | install | Publish the UI on the gateway apex host"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_name: "{{ ui_publish_name }}"
+    gateway_publish_namespace: "{{ ui_namespace }}"
+    gateway_publish_attach: apex
+    gateway_publish_route_hostnames: ["{{ ui_domain_name }}"]
+    gateway_publish_route_name: "{{ ui_route_name }}"
+    gateway_publish_auth: none
+    gateway_publish_rules:
+      - matches: [{path: {type: PathPrefix, value: /}}]
+        timeouts: {request: 0s, backendRequest: 0s}
+        backendRefs: [{name: ui-chart, port: 4173}]

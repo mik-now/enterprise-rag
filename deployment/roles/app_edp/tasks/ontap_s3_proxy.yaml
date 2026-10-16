@@ -12,24 +12,22 @@
   changed_when: false
   when: _edp_ontap_s3_tls_mode == 'ca'
 
-- name: "app_edp | ONTAP S3 | Assert the cluster serves BackendTLSPolicy v1alpha3"
+- name: "app_edp | ONTAP S3 | Assert the cluster serves BackendTLSPolicy v1"
   ansible.builtin.assert:
-    that: "'v1alpha3' in _edp_ontap_btp_versions"
+    that: "'v1' in _edp_ontap_btp_versions"
     fail_msg: >-
       edp_ontap_s3_tls_mode is 'ca', which needs
       CustomResourceDefinition/backendtlspolicies.gateway.networking.k8s.io serving
-      v1alpha3. This cluster serves {{ _edp_ontap_btp_versions | default([]) | join(', ') | default('nothing', true) }}.
-      The kind is experimental-channel only. It normally arrives with envoy-gateway's
-      own Gateway API bundle (gateway-helm, roles/envoy_gateway/defaults/main.yaml),
-      which is a newer bundle than the standard-channel CRDs the istio role installs.
-      Install the experimental channel, or use edp_ontap_s3_tls_mode: insecure, which
-      needs no extra CRD.
-    success_msg: "app_edp: ONTAP S3 BackendTLSPolicy v1alpha3 available"
+      v1. This cluster serves {{ _edp_ontap_btp_versions | default([]) | join(', ') | default('nothing', true) }}.
+      v1 is in every Gateway API bundle from v1.4 on (the platform gateway installs
+      one, OpenShift ships one from 4.22). Upgrade the Gateway API CRDs, or use
+      edp_ontap_s3_tls_mode: insecure, which needs no extra CRD.
+    success_msg: "app_edp: ONTAP S3 BackendTLSPolicy v1 available"
     quiet: true
   vars:
     _edp_ontap_btp_versions: >-
       {{ (_edp_ontap_btp_crd.resources | default([{}]) | first).spec.versions | default([])
-         | map(attribute='name') | list }}
+         | selectattr('served') | map(attribute='name') | list }}
   when: _edp_ontap_s3_tls_mode == 'ca'
 
 - name: "app_edp | ONTAP S3 | Create the CA ConfigMap for upstream TLS"
@@ -60,54 +58,62 @@
   loop_control:
     label: "{{ item.kind }}/{{ item.name }}"
   register: _edp_ontap_prune
-  # An absent CRD is not a failure here: the BackendTLSPolicy kind only exists on
-  # clusters carrying the Gateway API experimental channel, and the Backend kind
-  # only when envoy-gateway enables its extension APIs. Anything else must fail.
+  # An absent CRD is not a failure here: the BackendTLSPolicy kind (v1) needs a
+  # Gateway API bundle from v1.4 on, and the Backend kind exists only when Envoy
+  # Gateway enables its extension APIs. Anything else must fail.
   failed_when: >-
     _edp_ontap_prune is failed
     and 'Failed to find exact match' not in (_edp_ontap_prune.msg | default(''))
   vars:
     _edp_ontap_s3_stale_objects:
       insecure:
-        - {api: gateway.networking.k8s.io/v1alpha3, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
+        - {api: gateway.networking.k8s.io/v1, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
         - {api: discovery.k8s.io/v1, kind: EndpointSlice, name: "{{ edp_ontap_s3_backend_name }}"}
         - {api: v1, kind: Service, name: "{{ edp_ontap_s3_backend_name }}"}
         - {api: v1, kind: ConfigMap, name: "{{ edp_ontap_s3_ca_configmap_name }}"}
       ca:
         - {api: gateway.envoyproxy.io/v1alpha1, kind: Backend, name: "{{ edp_ontap_s3_backend_name }}"}
       plaintext:
-        - {api: gateway.networking.k8s.io/v1alpha3, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
+        - {api: gateway.networking.k8s.io/v1, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
         - {api: gateway.envoyproxy.io/v1alpha1, kind: Backend, name: "{{ edp_ontap_s3_backend_name }}"}
         - {api: v1, kind: ConfigMap, name: "{{ edp_ontap_s3_ca_configmap_name }}"}
 
 # Gateway API awards an overlapping match to the older route, so a SeaweedFS route
 # left over from a previous install keeps receiving the browser uploads while
 # edpInternalUrl already points at ONTAP: the upload succeeds and nothing is ever
-# ingested. Only the S3 API route collides; seaweedfs-admin-route claims a
-# different hostname (or a different path prefix in path mode).
-- name: "app_edp | ONTAP S3 | Remove the SeaweedFS S3 route claiming the same hostname"
+# ingested. The S3 host is also granted to one namespace at a time, so the
+# SeaweedFS publication goes before ONTAP's. Only the S3 API collides;
+# seaweedfs-admin claims a different hostname (or path prefix in path mode).
+- name: "app_edp | ONTAP S3 | Resolve how the S3 route attaches"
+  ansible.builtin.include_tasks:
+    file: s3_listener_section.yaml
+
+- name: "app_edp | ONTAP S3 | Unpublish the SeaweedFS S3 API"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: unpublish
+    gateway_publish_name: "{{ edp_publish_seaweedfs_s3 }}"
+    gateway_publish_namespace: "{{ edp_seaweedfs_namespace }}"
+    # host, not _edp_s3_attach: also removes a listener of its own from before
+    # the platform's S3 listener existed.
+    gateway_publish_attach: "{{ 'apex' if _edp_s3_path_mode | bool else 'host' }}"
+    gateway_publish_hostname: "{{ _edp_s3_host }}"
+    gateway_publish_route_name: seaweedfs-s3-route
+
+- name: "app_edp | ONTAP S3 | Remove the SeaweedFS S3 policy of earlier releases"
   kubernetes.core.k8s:
     state: absent
-    api_version: "{{ item.api }}"
-    kind: "{{ item.kind }}"
-    name: "{{ item.name }}"
+    api_version: gateway.envoyproxy.io/v1alpha1
+    kind: SecurityPolicy
+    name: seaweedfs-s3-no-auth
     namespace: "{{ edp_seaweedfs_namespace }}"
-  loop:
-    - {api: gateway.envoyproxy.io/v1alpha1, kind: SecurityPolicy, name: seaweedfs-s3-no-auth}
-    - {api: gateway.networking.k8s.io/v1, kind: HTTPRoute, name: seaweedfs-s3-route}
-  loop_control:
-    label: "{{ item.kind }}/{{ item.name }}"
   register: _edp_ontap_sw_prune
   # The SecurityPolicy CRD is absent when envoy-gateway is not installed; a real
-  # error (RBAC, webhook, apiserver) must still stop the install, because the route
-  # that stays behind is the one that silently swallows the uploads.
+  # error (RBAC, webhook, apiserver) must still stop the install.
   failed_when: >-
     _edp_ontap_sw_prune is failed
     and 'Failed to find exact match' not in (_edp_ontap_sw_prune.msg | default(''))
-
-- name: "app_edp | ONTAP S3 | Resolve the gateway listener to bind"
-  ansible.builtin.include_tasks:
-    file: s3_listener_section.yaml
 
 - name: "app_edp | ONTAP S3 | Apply the reverse proxy objects"
   kubernetes.core.k8s:
@@ -117,6 +123,37 @@
     # both.
     apply: true
     definition: "{{ lookup('template', 'ontap-s3-proxy.yaml.j2') | from_yaml_all | list }}"
+
+# The route's own SecurityPolicy (no gateway auth, CORS) comes with the proxy
+# objects above, so the publication keeps auth 'gateway' and adds none.
+- name: "app_edp | ONTAP S3 | Publish the S3 API"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_name: "{{ edp_publish_ontap_s3 }}"
+    gateway_publish_namespace: "{{ edp_namespace }}"
+    gateway_publish_attach: "{{ _edp_s3_attach }}"
+    gateway_publish_hostname: "{{ _edp_s3_host }}"
+    gateway_publish_route_hostnames: ["{{ _edp_s3_host }}"]
+    gateway_publish_route_name: "{{ edp_ontap_s3_route_name }}"
+    # SigV4: no hostname rewrite (Host is signed); in path mode the prefix must
+    # equal edp_s3_path_prefix, which EDP re-injects after signing.
+    gateway_publish_rules:
+      - matches: [{path: {type: PathPrefix, value: "{{ _edp_s3_prefix if _edp_s3_path_mode | bool else '/' }}"}}]
+        filters: >-
+          {{ [{'type': 'URLRewrite', 'urlRewrite': {'path': {'type': 'ReplacePrefixMatch', 'replacePrefixMatch': '/'}}}]
+             if _edp_s3_path_mode | bool else [] }}
+        timeouts:
+          request: "{{ edp_ontap_s3_request_timeout }}"
+          backendRequest: "{{ edp_ontap_s3_request_timeout }}"
+        backendRefs: >-
+          {{ [{'group': 'gateway.envoyproxy.io', 'kind': 'Backend', 'name': edp_ontap_s3_backend_name}]
+             if _edp_ontap_s3_tls_mode == 'insecure'
+             else [{'name': edp_ontap_s3_backend_name, 'port': _edp_ontap_s3_port | int}] }}
+
+- name: "app_edp | ONTAP S3 | Listener the route bound"
+  ansible.builtin.set_fact:
+    _edp_s3_section: "{{ gateway_publish_result.parent_ref.sectionName }}"
 
 - name: "app_edp | ONTAP S3 | Verify the proxy attached to the gateway"
   ansible.builtin.include_tasks:

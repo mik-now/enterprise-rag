@@ -78,7 +78,7 @@ EDP hands the browser a presigned SigV4 URL, and the browser PUTs the file direc
 
 Getting these out of step is the most common way to break ingestion. The role derives both automatically.
 
-The reverse proxy objects (`Service`/`EndpointSlice` or an Envoy Gateway `Backend`, an `HTTPRoute`, and a route-scoped `SecurityPolicy`) are created in the `edp` namespace by `roles/app_edp/tasks/ontap_s3_proxy.yaml`.
+The reverse proxy objects (`Service`/`EndpointSlice` or an Envoy Gateway `Backend`, an `HTTPRoute`, and a route-scoped `SecurityPolicy`) are created in the `edp` namespace by `roles/app_edp/tasks/ontap_s3_proxy.yaml`; the `HTTPRoute` is published through the platform's `gateway_publish` role, on the platform's dedicated S3 listener when it exists and otherwise on a listener (or ListenerSet, Gateway API ≥ v1.5) of its own for the S3 host.
 
 ### Configuration
 
@@ -132,7 +132,7 @@ The following values are automatically computed by `roles/app_edp/tasks/ontap_s3
 | Mode | Mechanism | Trade-off |
 |------|-----------|-----------|
 | `insecure` (default) | Envoy Gateway `Backend` with `tls.insecureSkipVerify` and `alpnProtocols: [http/1.1]` | The hop to the array is unverified. ONTAP's certificate is normally self-signed and issued to the SVM, not the data LIF, so verification would fail on the name even with a trusted issuer. |
-| `ca` | Gateway API `BackendTLSPolicy` (`v1alpha3`) validating against a ConfigMap built from `ontap_s3_ca_cert_file` | The only verified option. Needs the experimental-channel CRD and a real CA plus an SNI name the certificate matches (`edp_ontap_s3_sni_hostname`). |
+| `ca` | Gateway API `BackendTLSPolicy` (`v1`) validating against a ConfigMap built from `ontap_s3_ca_cert_file` | The only verified option. Needs a Gateway API bundle serving `BackendTLSPolicy` v1 (v1.4 or later; the platform gateway installs v1.6.1, OpenShift 4.22+ ships it) a real CA plus an SNI name the certificate matches (`edp_ontap_s3_sni_hostname`). |
 | `plaintext` | No upstream TLS. Also selected by `ontap_s3_tls: false`. | Simplest, defensible on a trusted storage VLAN, but object bytes cross the cluster network unencrypted. |
 
 To use `ca` mode:

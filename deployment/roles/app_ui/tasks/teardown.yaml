@@ -1,4 +1,14 @@
 ---
+- name: "app_ui | teardown | Unpublish the UI from the gateway"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: unpublish
+    gateway_publish_name: "{{ ui_publish_name }}"
+    gateway_publish_namespace: "{{ ui_namespace }}"
+    gateway_publish_attach: apex
+    gateway_publish_route_name: "{{ ui_route_name }}"
+
 - name: "app_ui | Uninstall Helm chart"
   kubernetes.core.helm:
     name: "{{ ui_helm_release_name }}"

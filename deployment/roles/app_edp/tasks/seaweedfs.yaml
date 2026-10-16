@@ -200,22 +200,64 @@
   retries: 5
   delay: 15
 
-# HTTPRoutes for seaweedfs-s3 + seaweedfs-admin against the core Envoy Gateway.
-# Per-component routing lives alongside the component rather than in a standalone
-# gateway helm chart.
-
-# The S3 route's listener is resolved from the live Gateway: on an ONTAP deployment the
-# core installer adds a listener claiming s3.<base_domain_name> exactly, which takes
-# that hostname away from the wildcard listener.
-- name: "app_edp | Resolve the gateway listener for the S3 route"
+# SeaweedFS S3 API and admin UI on the platform gateway (gateway_publish). No
+# gateway auth on either: S3 clients sign with SigV4, the admin UI has its own
+# session login. The S3 host is published here only while SeaweedFS serves it;
+# with the ONTAP S3 proxy active, ONTAP owns it and this publication is removed.
+- name: "app_edp | install | Resolve how the S3 routes attach"
   ansible.builtin.include_tasks:
     file: s3_listener_section.yaml
-  when: _edp_s3_section is not defined
+  when: _edp_s3_attach is not defined
 
-- name: "app_edp | Apply SeaweedFS HTTPRoutes (S3 API + admin UI)"
+- name: "app_edp | install | Remove the SeaweedFS route policies of earlier releases"
   kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'seaweedfs-httproutes.yaml.j2') | from_yaml_all | list }}"
+    state: absent
+    api_version: gateway.envoyproxy.io/v1alpha1
+    kind: SecurityPolicy
+    name: "{{ item }}"
+    namespace: "{{ edp_seaweedfs_namespace }}"
+  loop: [seaweedfs-s3-no-auth, seaweedfs-admin-no-auth]
+  register: _edp_sw_legacy
+  failed_when: >-
+    _edp_sw_legacy is failed
+    and 'Failed to find exact match' not in (_edp_sw_legacy.msg | default(''))
+
+- name: "app_edp | install | Publish the SeaweedFS S3 API"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: "{{ 'unpublish' if _edp_ontap_s3_active | default(false) | bool else 'publish' }}"
+    gateway_publish_name: "{{ edp_publish_seaweedfs_s3 }}"
+    gateway_publish_namespace: "{{ edp_seaweedfs_namespace }}"
+    gateway_publish_attach: >-
+      {{ ('apex' if _edp_s3_path_mode | bool else 'host') if _edp_ontap_s3_active | default(false) | bool
+         else _edp_s3_attach }}
+    gateway_publish_hostname: "{{ _edp_s3_host }}"
+    gateway_publish_route_hostnames: ["{{ _edp_s3_host }}"]
+    gateway_publish_route_name: seaweedfs-s3-route
+    gateway_publish_auth: none
+    gateway_publish_rules:
+      - matches: [{path: {type: PathPrefix, value: "{{ _edp_s3_prefix if _edp_s3_path_mode | bool else '/' }}"}}]
+        filters: >-
+          {{ [{'type': 'URLRewrite', 'urlRewrite': {'path': {'type': 'ReplacePrefixMatch', 'replacePrefixMatch': '/'}}}]
+             if _edp_s3_path_mode | bool else [] }}
+        timeouts: {request: 3600s, backendRequest: 3600s}
+        backendRefs: [{name: seaweedfs-s3, port: 8333}]
+
+- name: "app_edp | install | Publish the SeaweedFS admin UI"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_name: "{{ edp_publish_seaweedfs_admin }}"
+    gateway_publish_namespace: "{{ edp_seaweedfs_namespace }}"
+    gateway_publish_attach: "{{ 'apex' if _edp_s3_path_mode | bool else 'host' }}"
+    gateway_publish_hostname: "{{ _edp_admin_host }}"
+    gateway_publish_route_hostnames: ["{{ base_domain_name if _edp_s3_path_mode | bool else _edp_admin_host }}"]
+    gateway_publish_route_name: seaweedfs-admin-route
+    gateway_publish_auth: none
+    gateway_publish_rules:
+      - matches: [{path: {type: PathPrefix, value: "{{ _edp_seaweedfs_prefix if _edp_s3_path_mode | bool else '/' }}"}}]
+        backendRefs: [{name: seaweedfs-admin, port: 23646}]
 
 - name: "app_edp | Mark SeaweedFS secrets for password management"
   ansible.builtin.include_role:

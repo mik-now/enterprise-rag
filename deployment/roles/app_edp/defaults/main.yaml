@@ -33,6 +33,17 @@ _edp_s3_host: >-
   {{ base_domain_name if _edp_s3_path_mode | bool
      else edp_s3_domain_prefix ~ '.' ~ base_domain_name }}
 _edp_s3_prefix: "{{ edp_s3_path_prefix | default(edp_default_s3_path_prefix, true) | string | trim }}"
+_edp_seaweedfs_prefix: >-
+  {{ edp_seaweedfs_path_prefix | default(edp_default_seaweedfs_path_prefix, true) | string | trim }}
+# SeaweedFS admin UI host (subdomain mode).
+_edp_admin_host: "{{ edp_ui_browser_domain_prefix ~ '.' ~ base_domain_name }}"
+
+# --- Gateway publications (platform gateway_publish) ---
+# One per host; the name also names its listener (or ListenerSet) and certificate.
+# The S3 host belongs to whichever backend serves it (SeaweedFS or ONTAP).
+edp_publish_seaweedfs_s3: "seaweedfs-s3"        # in edp_seaweedfs_namespace
+edp_publish_seaweedfs_admin: "seaweedfs-admin"  # in edp_seaweedfs_namespace
+edp_publish_ontap_s3: "ontap-s3"                # in edp_namespace
 
 # --- Helm ---
 edp_helm_version: "{{ helm_version }}"

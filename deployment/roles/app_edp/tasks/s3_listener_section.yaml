@@ -2,42 +2,46 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# Which gateway listener an S3 route has to name in sectionName. Both the SeaweedFS
-# S3 route and the ONTAP S3 route claim the same hostname, so both bind whatever
-# this resolves.
+# How the S3 routes attach to the platform gateway. Both the SeaweedFS S3 route
+# and the ONTAP S3 route claim the same hostname, so both use what this resolves.
 #
-# Gateway API resolves overlapping listener hostnames by specificity, so as soon as
-# the platform gateway carries a listener claiming s3.<base_domain> exactly (the core
-# installer's '{{ gateway_s3_listener_name }}', which holds the ClientTrafficPolicy
-# that SigV4 needs), the '*.<base_domain>' wildcard listener stops covering that name
-# and a route pinned to 'https' goes Accepted=False / NoMatchingListenerHostname.
-#
-# The rule is "name the listener whose hostname is exactly the route hostname, else
-# the wildcard one", which resolves every case without branching: the dedicated S3
-# listener, 'https-apex' in path mode, and 'https' against a core installer that
-# predates the dedicated listener or whose listener claims a different hostname.
-# Core creates that listener from ontap_s3_data_lif alone, which is not the condition
-# this role activates the proxy on, so the two are deliberately resolved from the
-# live Gateway rather than assumed to agree.
+# When the platform gateway has a listener claiming s3.<base_domain> exactly (the
+# platform's 'https-s3' (gateway_s3_listener_name), which holds the
+# ClientTrafficPolicy SigV4 needs), the route binds it; otherwise the S3 host is
+# published with a listener of its own (gateway_publish). Core creates that
+# listener from ontap_s3_data_lif alone, which is not the condition this role
+# activates the proxy on, so it is resolved from the live Gateway.
 
 - name: "app_edp | S3 listener | Read the platform gateway listeners"
   kubernetes.core.k8s_info:
     api_version: gateway.networking.k8s.io/v1
     kind: Gateway
-    name: "{{ gateway_name }}"
-    namespace: "{{ gateway_namespace }}"
+    # Foreign: owned by the gateway role.
+    name: "{{ gateway_name | default('eg-gateway') }}"
+    namespace: "{{ gateway_namespace | default('envoy-gateway-system') }}"
   register: _edp_s3_gw_listeners
   check_mode: false
   changed_when: false
 
+# How the S3 routes publish (gateway_publish_attach), read-only:
+#   s3    the platform's dedicated S3 listener claims the host (signed paths intact)
+#   apex  routing_mode path: the S3 API is a path on the apex host
+#   host  otherwise: a listener of its own for the S3 host
+# _edp_s3_section is that listener's sectionName when known here ('' = the
+# publication's own listener, reported by gateway_publish_result).
 - name: "app_edp | S3 listener | Select the listener that claims the S3 hostname"
   ansible.builtin.set_fact:
-    _edp_s3_section: "{{ _exact | default(_wildcard, true) }}"
+    _edp_s3_attach: "{{ 'apex' if _edp_s3_path_mode | bool else 's3' if _exact else 'host' }}"
+    _edp_s3_section: "{{ 'https-apex' if _edp_s3_path_mode | bool else _exact }}"
   vars:
     _tls_listeners: >-
       {{ (_edp_s3_gw_listeners.resources | default([{}]) | first).spec.listeners | default([])
          | selectattr('protocol', 'eq', 'HTTPS') | list }}
     _exact: >-
-      {{ _tls_listeners | selectattr('hostname', 'defined') | selectattr('hostname', 'eq', _edp_s3_host)
+      {{ '' if _edp_s3_path_mode | bool else
+         _tls_listeners | selectattr('name', 'eq', _s3_listener)
+         | selectattr('hostname', 'defined') | selectattr('hostname', 'eq', _edp_s3_host)
          | map(attribute='name') | list | first | default('', true) }}
-    _wildcard: "{{ 'https-apex' if _edp_s3_path_mode else 'https' }}"
+    # Foreign: owned by the gateway role. Only the platform's S3 listener counts:
+    # a publication's own listener for the same host (listener mode) is not it.
+    _s3_listener: "{{ gateway_s3_listener_name | default('https-s3') }}"

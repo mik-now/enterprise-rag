@@ -12,6 +12,22 @@
     kind: Namespace
     name: "{{ seaweedfs.namespace | default('seaweedfs') }}"
 
+- name: "app_edp | teardown | Unpublish SeaweedFS from the gateway"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: unpublish
+    gateway_publish_name: "{{ item.name }}"
+    gateway_publish_namespace: "{{ edp_seaweedfs_namespace }}"
+    gateway_publish_attach: "{{ 'apex' if _edp_s3_path_mode | bool else 'host' }}"
+    gateway_publish_hostname: "{{ item.host }}"
+    gateway_publish_route_name: "{{ item.route }}"
+  loop:
+    - {name: "{{ edp_publish_seaweedfs_s3 }}", host: "{{ _edp_s3_host }}", route: seaweedfs-s3-route}
+    - {name: "{{ edp_publish_seaweedfs_admin }}", host: "{{ _edp_admin_host }}", route: seaweedfs-admin-route}
+  loop_control:
+    label: "{{ item.name }}"
+
 - name: "app_edp | Uninstall SeaweedFS Helm release"
   kubernetes.core.helm:
     name: "seaweedfs"

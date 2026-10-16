@@ -58,14 +58,8 @@ rateLimit:
     requests: {{ mcp_rate_limit_route_requests }}
     unit: {{ mcp_rate_limit_unit }}
 
+# Routes are published by app_mcp_gateway through the platform's gateway_publish
+# role; the chart keeps the JWT and rate-limit policies that target them.
 httpRoute:
   enabled: true
-  gatewayRef:
-    name: "{{ gateway_name }}"
-    namespace: "{{ gateway_namespace }}"
-    # ui_domain_name is the bare base_domain_name in both routing modes, and the
-    # wildcard 'https' listener only matches subdomains, so bind to https-apex.
-    sectionName: https-apex
-  hostnames:
-    - "{{ ui_domain_name }}"
-  timeout: "{{ mcp_route_timeout }}"
+  create: false

@@ -55,13 +55,9 @@ image:
     tag: "{{ tag }}"
     repository: "{{ registry }}"
 
+# The route is published by app_ui through the platform's gateway_publish role.
 httpRoute:
-  enabled: true
-  gatewayRef:
-    name: {{ gateway_name | default('eg-gateway') }}
-    namespace: {{ gateway_namespace | default('envoy-gateway-system') }}
-    # Bind to the apex listener (bare base_domain_name); the wildcard listener only
-    # matches subdomains, so sectionName must be https-apex for solutions.ai.
-    sectionName: https-apex
-  hostnames:
-    - *dname
+  enabled: false
+securityPolicy:
+  noAuth:
+    enabled: false

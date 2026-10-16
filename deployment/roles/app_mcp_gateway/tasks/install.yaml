@@ -149,6 +149,27 @@
   retries: 5
   delay: 15
 
+# After the chart: a release from before this change still owns the routes, which
+# the upgrade above removes. Same names, so the chart's JWT SecurityPolicy and
+# rate-limit BackendTrafficPolicy keep targeting them. The data path keeps the
+# Gateway's auth (the route-level JWT policy overrides it); the health probe and
+# the OAuth protected-resource metadata are reachable without a token, and their
+# Exact matches take precedence over the data path's prefix.
+- name: "app_mcp_gateway | install | Publish the MCP routes on the gateway apex host"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_name: "{{ item.name }}"
+    gateway_publish_namespace: "{{ mcp_namespace }}"
+    gateway_publish_attach: apex
+    gateway_publish_route_hostnames: ["{{ ui_domain_name }}"]
+    gateway_publish_route_name: "{{ item.route }}"
+    gateway_publish_auth: "{{ item.auth }}"
+    gateway_publish_rules: "{{ item.rules }}"
+  loop: "{{ _mcp_publications }}"
+  loop_control:
+    label: "{{ item.route }}"
+
 # A Ready pod and an Accepted route do not mean an agent can call the gateway: the edge
 # validates the token against a cached JWKS that can lag the realm keys just after an
 # install. Gate the install on a real token being accepted so the failure surfaces here

@@ -2,7 +2,8 @@
 Copyright (C) 2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 
-ONTAP S3 reverse proxy on the core Envoy Gateway.
+ONTAP S3 reverse proxy on the platform gateway: the backend objects and the
+route's SecurityPolicy. The HTTPRoute itself is published by gateway_publish.
 
 Browsers PUT documents straight to the URL EDP returns, and the ONTAP data LIF
 lives on the storage network, so the presigned endpoint has to be published
@@ -19,7 +20,8 @@ Choices below that are deliberate:
     HTTP/1.1 by default, and neither a Backend appProtocols entry nor a Service
     appProtocol of h2c is set below.
 
-Two rules below are load-bearing for SigV4 and must not be "improved":
+Two rules of the HTTPRoute (tasks/ontap_s3_proxy.yaml) are load-bearing for
+SigV4 and must not be "improved":
   - no URLRewrite hostname filter: the Host header is part of the signature.
   - in path mode the PathPrefix must equal edp_s3_path_prefix, because
     src/edp/app/utils.py re-injects that prefix after signing and the gateway
@@ -28,7 +30,7 @@ Two rules below are load-bearing for SigV4 and must not be "improved":
 They are necessary but not sufficient: the listener also runs with normalize_path,
 merge_slashes and path_with_escaped_slashes_action, which rewrite a signed path before
 it reaches ONTAP and produce SignatureDoesNotMatch. This template cannot fix that -
-the first two are per-listener (ClientTrafficPolicy on the core installer's Gateway)
+the first two are per-listener (ClientTrafficPolicy on the platform Gateway)
 and normalize_path has no Gateway API knob at all. /api/presignedUrl rejects object
 names that would be rewritten (src/edp/app/utils.py::gateway_unsafe_object_name_segments),
 and tasks/ontap_s3_validate.yaml reports whether the listener carries the policy.
@@ -39,7 +41,6 @@ and tasks/ontap_s3_validate.yaml reports whether the listener carries the policy
 {% set _lif = _edp_ontap_s3_lif | string | trim %}
 {% set _port_name = 'http' if _tls_mode == 'plaintext' else 'https' %}
 {% set _path_mode = _edp_s3_path_mode | bool %}
-{% set _path_prefix = edp_s3_path_prefix | default(edp_default_s3_path_prefix, true) %}
 {# Compared as text so the expression holds for a real boolean and for the string an
    Ansible fact may carry. #}
 {% set _lif_is_ipv4 = (_edp_ontap_s3_lif_is_ipv4 | string | lower) == 'true' %}
@@ -118,14 +119,14 @@ spec:
       - "http/1.1"
 {% elif _tls_mode == 'ca' %}
 ---
-# v1alpha3 is the version every Gateway API release that has this kind serves:
-# 1.2 offers it in the experimental channel only, 1.3 promoted it to standard and
-# 1.4 added a v1 alias. tasks/ontap_s3_proxy.yaml checks the CRD before applying.
+# v1 is served by every Gateway API bundle from v1.4 on; from v1.5 it is the only
+# served version (v1alpha3 stays listed with served: false). tasks/ontap_s3_proxy.yaml
+# checks that the CRD serves v1 before applying.
 #
 # Gateway API has no ALPN control, so this mode cannot pin the upstream to
 # HTTP/1.1 the way the Backend above does. Use edp_ontap_s3_tls_mode: insecure or
 # plaintext if the ONTAP S3 server negotiates h2 and then misbehaves.
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: "{{ _svc }}-tls"
@@ -145,59 +146,10 @@ spec:
         name: "{{ edp_ontap_s3_ca_configmap_name }}"
 {% endif %}
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: "{{ edp_ontap_s3_route_name }}"
-  namespace: "{{ edp_namespace }}"
-  labels:
-    app.kubernetes.io/name: "{{ _svc }}"
-    app.kubernetes.io/managed-by: ansible
-spec:
-  parentRefs:
-    - name: "{{ gateway_name }}"
-      namespace: "{{ gateway_namespace }}"
-      # tasks/s3_listener_section.yaml picks the listener whose hostname is exactly
-      # this route's hostname: the core installer's dedicated S3 listener in
-      # subdomain mode, the apex listener in path mode, the wildcard listener when
-      # neither claims the name. Getting this wrong leaves the route Accepted=False
-      # with reason NoMatchingListenerHostname. The default below is the same
-      # decision without a cluster to ask.
-      sectionName: "{{ _edp_s3_section | default('https-apex' if _path_mode else gateway_s3_listener_name) }}"
-  hostnames:
-    - "{{ _edp_s3_host }}"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-{% if _path_mode %}
-            value: "{{ _path_prefix }}"
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplacePrefixMatch
-              replacePrefixMatch: "/"
-{% else %}
-            value: "/"
-{% endif %}
-      timeouts:
-        request: "{{ edp_ontap_s3_request_timeout }}"
-        backendRequest: "{{ edp_ontap_s3_request_timeout }}"
-      backendRefs:
-{% if _tls_mode == 'insecure' %}
-        - group: gateway.envoyproxy.io
-          kind: Backend
-          name: "{{ _svc }}"
-{% else %}
-        - name: "{{ _svc }}"
-          port: {{ _port }}
-{% endif %}
----
-# Bypass the gateway-level JWT policy for the S3 API route. The core installer
-# attaches SecurityPolicy/gateway-auth to the whole Gateway
-# (roles/envoy_gateway/templates/security-policy.yaml.j2 targets kind: Gateway),
-# and S3 clients present SigV4 signatures, not OIDC tokens. Without this every
+# Bypass the gateway-level JWT policy for the S3 API route (published by
+# tasks/ontap_s3_proxy.yaml through gateway_publish). The platform attaches
+# SecurityPolicy/gateway-auth to the whole Gateway (gateway_envoy), and S3
+# clients present SigV4 signatures, not OIDC tokens. Without this every
 # upload returns 401. Empty spec = no authentication for this route.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy

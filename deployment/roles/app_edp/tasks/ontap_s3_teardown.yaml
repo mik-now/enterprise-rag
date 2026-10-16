@@ -21,6 +21,19 @@
   check_mode: false
   changed_when: false
 
+- name: "app_edp | ONTAP S3 | Unpublish the S3 API"
+  ansible.builtin.include_role:
+    name: gateway_publish
+  vars:
+    gateway_publish_action: unpublish
+    gateway_publish_name: "{{ edp_publish_ontap_s3 }}"
+    gateway_publish_namespace: "{{ edp_namespace }}"
+    # host also removes a listener of its own; nothing else is attach-specific.
+    gateway_publish_attach: "{{ 'apex' if _edp_s3_path_mode | bool else 'host' }}"
+    gateway_publish_hostname: "{{ _edp_s3_host }}"
+    gateway_publish_route_name: "{{ edp_ontap_s3_route_name }}"
+  when: _edp_ontap_td_route.resources | default([]) | length > 0
+
 - name: "app_edp | ONTAP S3 | Remove the reverse proxy objects"
   when: _edp_ontap_td_route.resources | default([]) | length > 0
   kubernetes.core.k8s:
@@ -31,8 +44,7 @@
     namespace: "{{ edp_namespace }}"
   loop:
     - {api: gateway.envoyproxy.io/v1alpha1, kind: SecurityPolicy, name: "{{ edp_ontap_s3_backend_name }}-no-auth"}
-    - {api: gateway.networking.k8s.io/v1, kind: HTTPRoute, name: "{{ edp_ontap_s3_route_name }}"}
-    - {api: gateway.networking.k8s.io/v1alpha3, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
+    - {api: gateway.networking.k8s.io/v1, kind: BackendTLSPolicy, name: "{{ edp_ontap_s3_backend_name }}-tls"}
     - {api: gateway.envoyproxy.io/v1alpha1, kind: Backend, name: "{{ edp_ontap_s3_backend_name }}"}
     - {api: discovery.k8s.io/v1, kind: EndpointSlice, name: "{{ edp_ontap_s3_backend_name }}"}
     - {api: v1, kind: Service, name: "{{ edp_ontap_s3_backend_name }}"}
@@ -41,7 +53,7 @@
     label: "{{ item.kind }}/{{ item.name }}"
   register: _edp_ontap_td
   # An absent object is already a successful deletion, and the three extension kinds
-  # do not exist at all when envoy-gateway or the Gateway API experimental channel is
+  # do not exist at all when Envoy Gateway or a Gateway API bundle serving them is
   # not installed. Everything else - RBAC, a webhook, an unreachable apiserver - must
   # fail: this task runs on every install where the proxy is inactive, and a route
   # left claiming s3.<domain> silently swallows the browser uploads.

@@ -54,6 +54,9 @@ config:
 httpRoute:
   # Edge route on the shared Envoy Gateway. MCP bypasses APISIX.
   enabled: true
+  # false: the routes are created outside the chart (same names); the JWT and
+  # rate-limit policies above still target them.
+  create: true
   gatewayRef:
     name: eg-gateway
     namespace: envoy-gateway-system
