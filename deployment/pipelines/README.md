@@ -79,7 +79,7 @@ through `pipeline_variant`.
 
 ## How the files map to `init` and flavours
 
-The core installer's `init` step (`es_auto_installer.sh init erag --flavour <type>`)
+The core installer's `init` step (`toolkit_manager.sh init erag --flavour <type>`)
 copies `pipelines/<flavour>/config.yaml` verbatim into `env/<name>/config.erag.yaml`.
 That file is a **flat** override surface loaded via `-e @file`, which shallow-merges -
 so every key in `config.yaml` must be a flat scalar. Do not introduce nested structures

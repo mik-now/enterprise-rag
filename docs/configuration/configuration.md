@@ -1,6 +1,6 @@
 # Configuration Reference
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 RAG-specific settings in `env/<name>/config.erag.yaml`. This is the file you edit to change models, pipelines, storage, and features; the installer reads it on every `install erag` run and updates only the components a change affects.
 
@@ -10,12 +10,12 @@ RAG-specific settings in `env/<name>/config.erag.yaml`. This is the file you edi
 ## Overview
 
 ```bash
-./es_auto_installer.sh init erag --env local      # seeds config.erag.yaml
+./toolkit_manager.sh init erag --env local      # seeds config.erag.yaml
 vi env/local/config.erag.yaml                     # (optional) customize
-./es_auto_installer.sh install erag --env local   # deploys
+./toolkit_manager.sh install erag --env local   # deploys
 ```
 
-Defaults: ChatQnA base, all components enabled, three models (LLM, embedding, reranking), Redis cluster vector store.
+Defaults (`chatqna` flavour): ChatQnA base, all components enabled, three models (LLM, embedding, reranking), Redis cluster vector store.
 
 Edit when:
 
@@ -32,13 +32,13 @@ Edit when:
 
 | Setting | Default | Options |
 |---------|---------|---------|
-| `pipeline_type` | `chatqna` | `chatqna` \| `docsum` \| `translation` \| `audioqna` |
+| `pipeline_type` | `chatqna` | `chatqna` \| `docsum` \| `translation` |
 | `pipeline_variant` | `base` | `base` \| `retrieve-rerank` \| `upload` (ChatQnA only) |
 | `solution_language` | `auto` | `auto` (Polish if LLM name has PLLuM/Bielik, else English) \| `en` \| `pl` |
 
-Types: **chatqna** (RAG with retrieval/rerank/LLM), **docsum** (TextExtractor → TextCompression → TextSplitter → LLM → DocSum), **translation** (ALMA models, preview), **audioqna** (ChatQnA + ASR/TTS).
+Types: **chatqna** (RAG with retrieval/rerank/LLM), **docsum** (TextExtractor → TextCompression → TextSplitter → LLM → DocSum), **translation** (ALMA models, preview). The `audioqna` (ChatQnA + ASR/TTS, `audio_enabled: true`), `pl_chatqna` and `chatqna_intel_gpu` flavours use `pipeline_type: chatqna`.
 
-Variants: **base** (full), **retrieve-rerank** (no LLM, retrieval-only), **upload** (embedding-only, ingestion). See [pipelines.md](../deploy/pipelines.md).
+Variants: **base** (full), **query-rewrite** (rewrites the question before embedding), **output_guard** (scans the answer), **retrieve-rerank** (no LLM, retrieval-only), **upload** (embedding-only, ingestion). See [pipelines.md](../deployment/pipelines.md).
 
 ## Component enablement
 
@@ -49,7 +49,9 @@ Variants: **base** (full), **retrieve-rerank** (no LLM, retrieval-only), **uploa
 | `edp_enabled` | `true` | Enhanced Data Preparation |
 | `hpa_enabled` | `true` | Horizontal Pod Autoscaling |
 | `ui_enabled` | `true` | React UI |
-| `mcp_enabled` | `false` | Model Context Protocol gateway |
+| `mcp_enabled` | `true` for `chatqna`, `audioqna`, `pl_chatqna`; `false` otherwise | Model Context Protocol gateway |
+
+Defaults are what the `chatqna` flavour seeds. `docsum` seeds only `ui_enabled: true` and `translation` none of these, so the components they leave out stay off.
 
 ## Backup and restore
 
@@ -57,9 +59,8 @@ Variants: **base** (full), **retrieve-rerank** (no LLM, retrieval-only), **uploa
 |---------|---------|---------|
 | `backup_enabled` | `false` | Arms this toolkit's backup profile. Also needs the platform's `velero_enabled: true` and `storage_backend: nfs` or `ceph` — both switches are independent, and either off makes a run a no-op |
 | `upgrade_backup_max_age_hours` | `6` | How fresh a backup the pre-upgrade gate demands, once `backup_enabled` is `true` |
-| `allow_upgrade_without_backup` | `false` | Bypass the gate for one upgrade |
 
-See [Backup and Restore](../operate/backup.md) for what is captured, how to run it, and the identity
+To bypass the gate for one upgrade, add `--force` to `install erag`. See [Backup and Restore](../deployment/backup-and-restore.md) for what is captured, how to run it, and the identity
 realm.
 
 ## Inference models
@@ -74,7 +75,7 @@ inference_models:
     role: reranking
 ```
 
-Each model name correspods to model definition defined in `env/<name>/models-rag.yaml` (seeded from `deployment/models.yaml`). Roles: `llm`, `embedding`, `reranking` are adding specific VLLM parameters to specific VLLM categories.
+Each model name corresponds to model definition defined in `env/<name>/models-rag.yaml` (seeded from `deployment/models.yaml`). Roles: `llm`, `embedding`, `reranking` are adding specific VLLM parameters to specific VLLM categories.
 
 If you'd like to use a model, not listed in `models-rag.yaml`, add a new entry there with `name` + `model_id` and reference to it in `config.erag.yaml`.
 
@@ -137,7 +138,7 @@ See [`src/comps/vectorstores/CONTRIBUTING.md`](../../src/comps/vectorstores/CONT
 | `edp_rbac_enabled` | `false` | Must be `false` for ONTAP S3, MSSQL |
 | `edp_scheduled_sync_enabled` | `false` | For S3-compatible sans SQS |
 
-Backends: **seaweedfs** (in-cluster), **s3** (AWS + SQS), **s3compatible** (ONTAP S3, external MinIO). See [object_store.md](object_store.md).
+Backends: **seaweedfs** (in-cluster), **s3** (AWS + SQS), **s3compatible** (ONTAP S3, external MinIO). See [object_store.md](object-store.md).
 
 ## Authentication and SSO
 
@@ -176,7 +177,7 @@ See [images.md](images.md).
 
 ## Horizontal Pod Autoscaling
 
-`hpa_enabled: true` (default). Scales the guardrails and EDP on Prometheus custom metrics; see [Performance › Horizontal Pod Autoscaling](../operate/performance.md#horizontal-pod-autoscaling). Disable for: fixed workload, manual scaling, resource-constrained.
+`hpa_enabled: true` (default). Scales the guardrails and EDP on Prometheus custom metrics; see [Performance › Horizontal Pod Autoscaling](performance.md#horizontal-pod-autoscaling). Disable for: fixed workload, manual scaling, resource-constrained.
 
 ## UI
 
@@ -220,7 +221,6 @@ mcp_enabled: false
 
 backup_enabled: false
 # upgrade_backup_max_age_hours: 6
-# allow_upgrade_without_backup: false
 
 inference_namespace: "llm-inference"
 inference_models:
@@ -254,10 +254,10 @@ inference_models:
 
 ## Changing values
 
-Edit `env/<name>/config.erag.yaml` and re-install, or override: `./es_auto_installer.sh install erag --env local -- -e mcp_enabled=true`.
+Edit `env/<name>/config.erag.yaml` and re-install, or override: `./toolkit_manager.sh install erag --env local -- -e mcp_enabled=true`.
 
 Precedence: CLI `-e` > `global_config.yaml` > `config.erag.yaml` > role defaults.
 
 ## Related docs
 
-[models.md](models.md) (models, multilingual, tuning), [auth.md](auth.md)/[sharepoint.md](sharepoint.md) (SSO, MFA, AD), [mcp.md](mcp.md) (MCP gateway), [object_store.md](object_store.md) (ONTAP S3), [images.md](images.md) (build images), [pipelines.md](../deploy/pipelines.md) (variants), [performance.md](../operate/performance.md) (tuning), [backup.md](../operate/backup.md) (backup and restore), [platform config](https://github.com/intel/toolkit-manager/blob/main/docs/customize/configuration.md).
+[models.md](models.md) (models, multilingual, tuning), [auth.md](auth.md)/[sharepoint.md](sharepoint.md) (SSO, MFA, AD), [mcp.md](mcp.md) (MCP gateway), [object_store.md](object-store.md) (ONTAP S3), [images.md](images.md) (build images), [pipelines.md](../deployment/pipelines.md) (variants), [performance.md](performance.md) (tuning), [backup.md](../deployment/backup-and-restore.md) (backup and restore), [platform config](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/configuration.md).

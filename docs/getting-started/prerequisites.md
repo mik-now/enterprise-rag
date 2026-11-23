@@ -1,6 +1,6 @@
 # Prerequisites
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 Everything you need before Toolkit Manager installs Intel® Chatbot Toolkit on the platform.
 
@@ -12,8 +12,8 @@ Toolkit Manager installs and operates Intel® Chatbot Toolkit on the platform. T
 
 > [!NOTE]
 > The platform prerequisites (OS, storage backends, node configuration, and SSH setup) are owned by Toolkit Manager. See:
-> - [Platform Prerequisites](https://github.com/intel/toolkit-manager/blob/main/docs/quickstart/prerequisites.md) for base requirements (OS, hardware, tooling, credentials)
-> - [Multi-Node & BYO Cluster](https://github.com/intel/toolkit-manager/blob/main/docs/deploy/topologies.md) for multi-node and bring-your-own-Kubernetes setups
+> - [Platform Prerequisites](https://github.com/intel/toolkit-manager/blob/main/docs/getting-started/prerequisites.md) for base requirements (OS, hardware, tooling, credentials)
+> - [Multi-Node & BYO Cluster](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/multi-node.md) for multi-node and bring-your-own-Kubernetes setups
 
 ---
 
@@ -44,7 +44,7 @@ The **limited single-user deployment** (32 cores / 64 GB RAM) is suitable only f
 
 - **Hugging Face model access:** Ensure you have the necessary access to download and use the models your deployment will serve. Gated models (Llama, Mistral, Gemma) require a [Hugging Face token](https://huggingface.co/settings/tokens) exported as `HF_TOKEN` before install.
 
-- **Multi-node clusters require ReadWriteMany (RWX) storage:** If deploying across multiple nodes, a CSI driver supporting `ReadWriteMany` access mode is required. Toolkit Manager can provision NFS (`storage_backend: nfs`) or NetApp Trident (`storage_backend: netapp-trident`). Single-node deployments use `local-path` by default. See [Platform Storage Documentation](https://github.com/intel/toolkit-manager/blob/main/docs/customize/configuration.md#storage) for configuration.
+- **Multi-node clusters require ReadWriteMany (RWX) storage:** If deploying across multiple nodes, a CSI driver supporting `ReadWriteMany` access mode is required. Toolkit Manager can provision NFS (`storage_backend: nfs`) or NetApp Trident (`storage_backend: netapp-trident`). Single-node deployments use `local-path` by default. See [Platform Storage Documentation](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/configuration.md#storage) for configuration.
 
 ---
 
@@ -53,10 +53,10 @@ The **limited single-user deployment** (32 cores / 64 GB RAM) is suitable only f
 Cluster provisioning, operating system requirements, Kubernetes versions, storage backends, and node topology are owned by **Toolkit Manager**.
 
 For those topics, see:
-- [Platform Prerequisites](https://github.com/intel/toolkit-manager/blob/main/docs/quickstart/prerequisites.md) - OS, tooling, hardware minimums for the platform
-- [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/quickstart/quickstart.md) - installing the cluster
-- [Multi-Node & BYO Cluster](https://github.com/intel/toolkit-manager/blob/main/docs/deploy/topologies.md) - multi-node and bring-your-own-Kubernetes setups
-- [Storage Configuration](https://github.com/intel/toolkit-manager/blob/main/docs/customize/configuration.md#storage) - NFS, Ceph, NetApp Trident
+- [Platform Prerequisites](https://github.com/intel/toolkit-manager/blob/main/docs/getting-started/prerequisites.md) - OS, tooling, hardware minimums for the platform
+- [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/getting-started/quickstart.md) - installing the cluster
+- [Multi-Node & BYO Cluster](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/multi-node.md) - multi-node and bring-your-own-Kubernetes setups
+- [Storage Configuration](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/configuration.md#storage) - NFS, Ceph, NetApp Trident
 
 ---
 
@@ -66,7 +66,7 @@ When deploying on the minimum hardware configuration (60 logical cores / 128 GB 
 
 ### KV cache reduction (required)
 
-Model servers cache key-value pairs during inference. The default cache size (`10` GB) must be reduced to `1` GB for minimum-hardware deployments.
+Model servers cache key-value pairs during inference. The LLM default is `8` GB (`kv_cache_gb` of the `llm` category in the vLLM runtime; a few catalog entries, such as the PLLuM models, set `10`). It must be reduced to `1` GB for minimum-hardware deployments.
 
 Edit the model catalog **after** running `init erag` (it creates the catalog at `env/<name>/models-rag.yaml`):
 
@@ -74,7 +74,7 @@ Edit the model catalog **after** running `init erag` (it creates the catalog at 
 nano env/<name>/models-rag.yaml
 ```
 
-Find the models you will deploy and reduce their `VLLM_CPU_KVCACHE_SPACE` setting from `"10"` to `"1"`:
+Find the LLM you will deploy and set `VLLM_CPU_KVCACHE_SPACE` to `"1"` in its `env`, adding the block if the entry has none:
 
 ```yaml
   - name: llama3-8b-awq
@@ -85,14 +85,14 @@ Find the models you will deploy and reduce their `VLLM_CPU_KVCACHE_SPACE` settin
     cpu: 32
     memory: 24Gi
     env:
-      VLLM_CPU_KVCACHE_SPACE: "1"    # reduced from "10"
+      VLLM_CPU_KVCACHE_SPACE: "1"    # default for llm: 8
     args: [--max-num-seqs, "32", ...]
 ```
 
-Repeat for every model in `inference_models` (LLM, embedding, reranking).
+Embedding and reranking models have no KV cache setting; leave them as they are.
 
 > [!IMPORTANT]
-> Reducing the KV cache from `10` GB to `1` GB significantly lowers vLLM memory usage but reduces the number of concurrent requests the model can cache. This trade-off is acceptable for evaluation and single-user deployments.
+> Reducing the KV cache to `1` GB significantly lowers vLLM memory usage but reduces the number of concurrent requests the model can cache. This trade-off is acceptable for evaluation and single-user deployments.
 
 ### Limited single-user (32 cores / 64 GB) additional steps
 

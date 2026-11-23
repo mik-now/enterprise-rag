@@ -1,6 +1,6 @@
 # Model Configuration
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 Intel® Chatbot Toolkit supports multiple models for LLM inference, text embedding, and reranking, including multilingual models for non-English deployments.
 
@@ -31,7 +31,7 @@ The catalog name is the `name:` field of an entry in `env/<name>/models-rag.yaml
 Edit `env/<name>/config.erag.yaml` and re-run:
 
 ```bash
-./es_auto_installer.sh install erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 ```
 
 The installer automatically:
@@ -58,7 +58,7 @@ Changing the embedding model changes the vector dimensions and invalidates the e
 
 LLM replica count and CPU allocation are calculated to fit the LLM, embedding, and reranking models together inside one NUMA node. Changing any model's size may affect the replica count of all three.
 
-Only models labeled `app.kubernetes.io/part-of=erag` are managed by the installer. Models deployed by hand or by Intel® Inference Toolkit are left alone.
+Only models labeled `erag.intel.com/managed-by=app_inference_models` are managed by the installer. Models deployed by hand or by Intel® Inference Toolkit are left alone.
 
 ## Model catalog reference
 
@@ -67,7 +67,7 @@ Default models for RAG Chatqna pipeline:
 | Role | Catalog name | Model ID | Language |
 |------|-------------|----------|----------|
 | LLM | `llama3-8b-awq` | `casperhansen/llama-3-8b-instruct-awq` | English |
-| Embedding | `nomic-embed` | `nomic-ai/nomic-embed-text-v1.5` | English |
+| Embedding | `nomic-embed` | `nomic-ai/nomic-embed-text-v1` | English |
 | Reranking | `bge-reranker-v2-m3` | `BAAI/bge-reranker-v2-m3` | Multi-language |
 
 
@@ -75,7 +75,7 @@ Multilingual recommended:
 
 | Role | Catalog name | Model ID | Languages |
 |------|-------------|----------|-----------|
-| Embedding | `multilingual-e5-large` | `intfloat/multilingual-e5-large-instruct` | 100+ |
+| Embedding | `e5-large-instruct` | `intfloat/multilingual-e5-large-instruct` | 100+ |
 | Reranking | `bge-reranker-v2-m3` | `BAAI/bge-reranker-v2-m3` | Multi-language |
 
 The full catalog is at `env/<name>/models-rag.yaml`. To see available catalog entries:
@@ -123,7 +123,7 @@ Each entry includes CPU/memory sizing, engine, category, and optional per-model 
 3. Deploy:
 
    ```bash
-   ./es_auto_installer.sh install erag --env <name>
+   ./toolkit_manager.sh install erag --env <name>
    ```
 
 4. Re-ingest all documents so they are embedded with the new multilingual model.
@@ -188,11 +188,10 @@ The `app_inference_models` role invokes `./model-manager` with these environment
 
 | Variable | Purpose |
 |----------|---------|
-| `HF_TOKEN` | Hugging Face token for gated models (e.g. Llama) |
+| `HF_TOKEN` | Hugging Face token for gated models (e.g. Llama); read from your shell, the role does not set it |
 | `MM_CONFIG` | Path to the model catalog (`env/<name>/models-rag.yaml`) |
-| `MM_GLOBAL_CONFIG` | Path to `env/<name>/global_config.yaml` |
-| `MM_CPU_POLICY` | Override `kubernetes_cpu_policy` for this invocation |
-| `MM_FORCE_REDEPLOY` | `1` - re-apply a model even if its spec is unchanged |
+| `MM_CPU_POLICY` | The `kubernetes_cpu_policy` of the environment (default `nri-balloons`) |
+| `MM_ACCELERATOR`, `MM_VLLM_RUNTIME`, `MM_ACCEL_RESOURCE`, `MM_ACCEL_RENDER_GID` | The accelerator profile for `kubernetes_accelerator` (`cpu`, or `intel-gpu` with the `vllm-xpu` runtime); empty on CPU |
 
 Run `./model-manager --help` for the full list of flags and environment variables.
 
@@ -200,7 +199,7 @@ Run `./model-manager --help` for the full list of flags and environment variable
 
 | Topic | Link |
 |-------|------|
-| Model catalog structure and runtime settings | [`ext/enterprise.ai-inference/docs/customize/catalog.md`](https://github.com/intel/inference-toolkit/blob/main/docs/customize/catalog.md) |
-| Supported serving runtimes (vLLM, OpenVINO) | [`ext/enterprise.ai-inference/docs/customize/runtimes.md`](https://github.com/intel/inference-toolkit/blob/main/docs/customize/runtimes.md) |
-| Performance tuning and sizing | [`../operate/performance.md`](../operate/performance.md) |
-| Pipeline variants and flavours | [`../deploy/pipelines.md`](../deploy/pipelines.md) |
+| Model catalog structure and runtime settings | [`ext/enterprise.ai-inference/docs/configuration/catalog.md`](https://github.com/intel/inference-toolkit/blob/main/docs/configuration/catalog.md) |
+| Supported serving runtimes (vLLM, OpenVINO) | [`ext/enterprise.ai-inference/docs/configuration/runtimes.md`](https://github.com/intel/inference-toolkit/blob/main/docs/configuration/runtimes.md) |
+| Performance tuning and sizing | [Performance](performance.md) |
+| Pipeline variants and flavours | [Pipelines](../deployment/pipelines.md) |

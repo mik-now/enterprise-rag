@@ -1,6 +1,6 @@
 # Object Store Configuration
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 Intel® Chatbot Toolkit supports multiple object store backends for storing ingested documents. The choice of backend affects where files are stored and how they are accessed by the EDP (Enhanced Data Preparation) service.
 
@@ -26,10 +26,10 @@ edp_storage_type: "seaweedfs"
 
 Deploys SeaweedFS in-cluster. No additional configuration required. Files are accessible at `https://seaweedfs.<base_domain_name>` (in `subdomain` routing mode) or `https://<base_domain_name>/seaweedfs` (in `path` routing mode).
 
-Storage capacity: Default persistent volume size is 5GB. To increase:
+Storage capacity: the data volume defaults to 50Gi (`seaweedfs.persistence.volume.size`; the filer is 10Gi, the master 2Gi). To increase:
 
 1. Edit `deployment/components/edp/values.yaml`
-2. Under the `persistence` section, set `size: 100Gi` (or your desired size)
+2. Under `seaweedfs.persistence.volume`, set `size: 100Gi` (or your desired size)
 3. Redeploy
 
 > **Note:** Vector store storage should be larger than file storage because it contains both extracted text and vector embeddings for that data.
@@ -45,7 +45,7 @@ edp_s3_sqs_event_queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/my
 edp_s3_bucket_name_regex_filter: ""  # optional: restrict which buckets EDP tracks
 ```
 
-Requires SQS event notifications configured on the S3 bucket for automatic ingestion. To create the buckets, the queue, and the IAM user with the AWS CLI, see [AWS S3 and SQS Setup](aws_s3.md).
+Requires SQS event notifications configured on the S3 bucket for automatic ingestion. To create the buckets, the queue, and the IAM user with the AWS CLI, see [AWS S3 and SQS Setup](aws-s3.md).
 
 ### S3-compatible (without SQS)
 
@@ -102,7 +102,7 @@ edp_s3_compatible_secret_access_key: "<secret-key>"
 Deploy or redeploy:
 
 ```bash
-./es_auto_installer.sh install erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 ```
 
 The installer prints the derived values at install time so a deployment can be read back from the log.
@@ -165,7 +165,7 @@ To use `ca` mode:
 - **Which gateway listener serves the S3 host.** The platform's dedicated S3 listener when it exists (it keeps signed paths intact); EDP then only records the host grant. Otherwise EDP publishes the host through the platform's gateway contract (`roles/gateway`, `publish.yaml`) as `ontap-s3` (namespace `edp`) or `seaweedfs-s3` (namespace `seaweedfs`), and the platform picks the mechanism: its own ListenerSet and certificate on a gateway that serves ListenerSets, a host grant on the shared `*.<base_domain_name>` listener otherwise, or the `/s3` path on the apex host in `routing_mode: path`. Those listeners use Envoy's default path normalization, so the key limitation above applies to them. The SeaweedFS admin UI is published the same way (`seaweedfs-admin`, `/seaweedfs` in path mode).
 - **No ONTAP-side provisioning.** The object-store server, the bucket, and the S3 user must exist, and the access keys are inputs. Nothing here creates them.
 
-For the complete end-to-end flow (from `configure` through `init erag` to `install erag`), array-side prerequisites, and the `ontap_*` values themselves, see `docs/NETAPP_ONTAP.md` in Toolkit Manager repository.
+For the complete end-to-end flow (from `configure` through `init erag` to `install erag`), array-side prerequisites, and the `ontap_*` values themselves, see [NetApp ONTAP and Trident](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/netapp-ontap.md) in the Toolkit Manager repository.
 
 ---
 
@@ -189,7 +189,7 @@ The scheduled task polls buckets for changes at the specified interval and inges
 
 | Topic | Link |
 |-------|------|
-| AWS S3 and SQS setup with the AWS CLI | [aws_s3.md](aws_s3.md) |
+| AWS S3 and SQS setup with the AWS CLI | [aws_s3.md](aws-s3.md) |
 | SharePoint integration (another EDP storage source) | [sharepoint.md](sharepoint.md) |
-| NetApp ONTAP persistent volumes | [NetApp ONTAP and Trident](https://github.com/intel/toolkit-manager/blob/main/docs/deploy/netapp_ontap.md) |
+| NetApp ONTAP persistent volumes | [NetApp ONTAP and Trident](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/netapp-ontap.md) |
 | EDP source code and detailed settings | [`src/edp/README.md`](../../src/edp/README.md) |

@@ -1,6 +1,6 @@
 # Setting Up S3 Buckets and SQS for EDP on AWS
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 This guide creates the AWS resources EDP needs to use external S3 storage:
 
@@ -71,7 +71,7 @@ POLICY_NAME=edp-s3-access-policy-$SUFFIX
 bucket_arns() { local path=$1; shift; printf '%s\n' "$@" | jq -R -s -c --arg path "$path" 'split("\n") | map(select(length > 0) | "arn:aws:s3:::" + . + $path)'; }
 ```
 
-`https://solutions.ai` in the CORS rule below is the default UI address (`base_domain_name` in `env/<name>/global_config.yaml`). Replace it if your deployment uses a different domain.
+`https://inteltoolkits.ai` in the CORS rule below is the default UI address (`base_domain_name` in `env/<name>/global_config.yaml`). Replace it if your deployment uses a different domain.
 
 ### Using More Buckets
 `READ_WRITE_BUCKETS` and `READ_ONLY_BUCKETS` are space-separated lists of bucket names, and EDP processes documents from every bucket it can access. To create more buckets, add their names to the lists before running the steps below, keeping `$SUFFIX` in each name:
@@ -109,7 +109,7 @@ for bucket in $BUCKETS; do
     "CORSRules": [{
       "AllowedHeaders": ["*"],
       "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
-      "AllowedOrigins": ["https://solutions.ai"],
+      "AllowedOrigins": ["https://inteltoolkits.ai"],
       "MaxAgeSeconds": 3000
     }]
   }'
@@ -220,7 +220,7 @@ edp:
 
 Then run deployment as usual, an example for installation from the Toolkit Manager root:
 ```bash
-./es_auto_installer.sh install erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 ```
 
 ## Cleanup

@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP) Gateway
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 The MCP gateway exposes Intel® Chatbot Toolkit capabilities as tools that AI agents can discover and invoke over a persistent SSE connection.
 
@@ -316,4 +316,4 @@ The Keycloak admin console is at `https://keycloak.<base_domain_name>` in `subdo
 | Topic | Link |
 |-------|------|
 | MCP gateway source code and service-level env vars | [`src/mcp_gateway/README.md`](../../src/mcp_gateway/README.md) |
-| Pipeline variants | [`../deploy/pipelines.md`](../deploy/pipelines.md) |
+| Pipeline variants | [`../deploy/pipelines.md`](../deployment/pipelines.md) |

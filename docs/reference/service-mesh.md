@@ -1,5 +1,7 @@
 # Mesh
 
+[← Docs index](../README.md)
+
 Intel® Chatbot Toolkit namespaces join the Istio ambient mesh deployed by the platform. This doc covers how the chatbot services plug into the mesh, the current mTLS posture, and how to troubleshoot mesh issues.
 
 ## Mesh Integration
@@ -37,7 +39,7 @@ kubectl get pod <pod> -n <namespace> -o jsonpath='{.spec.initContainers[*].name}
 
 ## Current mTLS Posture
 
-The deployment enforces `STRICT` mTLS via `PeerAuthentication` resources applied to each RAG namespace. All inter-service traffic is encrypted; only mTLS connections are allowed.
+The platform enforces `STRICT` mTLS with one mesh-wide `PeerAuthentication` named `default` in `istio-system` (`istio_mtls_mode`). All inter-service traffic is encrypted; only mTLS connections are allowed. The only exceptions are per-workload, per-port `PERMISSIVE` entries for the GMC webhook (`system` namespace) and the APISIX admission webhook, which the Kubernetes API server reaches without mTLS.
 
 **Authorization policies are not currently deployed.** The deployment ships zero `AuthorizationPolicy` resources. Only mutual TLS is enforced; service-to-service authorization (which services can talk to which) is not configured at this time. All services within the mesh can communicate with each other as long as they present a valid mTLS certificate.
 
@@ -140,7 +142,7 @@ For Istio installation, version, and cluster-wide configuration see the Toolkit 
 
 - [Namespace Security Labels](https://github.com/intel/toolkit-manager/blob/main/docs/reference/labels.md)
 - [Platform Architecture](https://github.com/intel/toolkit-manager/blob/main/docs/reference/architecture.md)
-- [Network Architecture](https://github.com/intel/toolkit-manager/blob/main/docs/deploy/networking.md)
+- [Network Architecture](https://github.com/intel/toolkit-manager/blob/main/docs/reference/networking.md)
 
 Istio troubleshooting guides:
 - https://istio.io/latest/docs/ambient/usage/troubleshoot-ztunnel/

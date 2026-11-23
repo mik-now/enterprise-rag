@@ -225,4 +225,4 @@ Every request carries its own token, including each tool-call POST. Session stat
 Every 401 carries `WWW-Authenticate: Bearer ..., resource_metadata="<url>"` pointing at `/api/v1/mcp/.well-known/oauth-protected-resource` (RFC 9728), which lists the authorization server. A spec-compliant MCP client uses that to discover where to get a token and to refresh once the current one expires. `/api/v1/mcp/health` and the metadata document itself are the only unauthenticated paths.
 
 
-See [`docs/mcp_integration.md`](../../docs/customize/mcp.md) for the full integration guide including deployment, routing and production client setup.
+See [`docs/configuration/mcp.md`](../../docs/configuration/mcp.md) for the full integration guide including deployment, routing and production client setup.

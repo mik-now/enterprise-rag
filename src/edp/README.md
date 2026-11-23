@@ -30,11 +30,11 @@ The Intel® Chatbot Toolkit Enhanced Data Preparation (EDP) service provides adv
 
 - Python >=3.11 is required to run EDP.
 - A stand alone `redis` server for task management is required.
-- A stand alone vector database deployed is required. List of supported databases can be found in [Configuration Reference › Vector database](../../docs/customize/configuration.md#vector-database)
+- A stand alone vector database deployed is required. List of supported databases can be found in [Configuration Reference › Vector database](../../docs/configuration/configuration.md#vector-database)
 - A stand alone `postgresql` server for storing file and link entries is required.
 - A S3 compatible storage (one of the following)
     - A stand alone `SeaweedFS` server for storing files. This is included and optional.
-    - An external AWS S3 bucket. For step-by-step instructions on creating one with the AWS CLI, see [docs/customize/aws_s3.md](../../docs/customize/aws_s3.md).
+    - An external AWS S3 bucket. For step-by-step instructions on creating one with the AWS CLI, see [docs/configuration/aws-s3.md](../../docs/configuration/aws-s3.md).
     - External server compatible with the S3 API
 
 - Running application server:
@@ -78,7 +78,7 @@ edp:
     bucketNameRegexFilter: ".*"
 ```
 
-For step-by-step instructions on creating the required AWS resources such as S3 buckets and SQS queues with the AWS CLI, refer to [docs/customize/aws_s3.md](../../docs/customize/aws_s3.md).
+For step-by-step instructions on creating the required AWS resources such as S3 buckets and SQS queues with the AWS CLI, refer to [docs/configuration/aws-s3.md](../../docs/configuration/aws-s3.md).
 
 Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.erag.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
 
@@ -105,9 +105,9 @@ Optionally, the environment variables (using the same names as in the legacy bas
 > [!NOTE]
 > If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
-Then deploy the application by following the instructions in [Deploy Intel® Chatbot Toolkit](../../docs/deploy/install_rag.md). Deploy from the core installer root:
+Then deploy the application by following the instructions in [Deploy Intel® Chatbot Toolkit](../../docs/deployment/install-rag.md). Deploy from the core installer root:
 ```bash
-./es_auto_installer.sh install erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 ```
 
 After successful deployment, upload files using either WebGUI or cURL:

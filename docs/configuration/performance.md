@@ -1,5 +1,7 @@
 # Performance
 
+[← Docs index](../README.md)
+
 Recommendations for optimizing Intel® Chatbot Toolkit deployment performance.
 
 ## LLM Model Selection
@@ -16,7 +18,7 @@ inference_models:
     role: reranking
 ```
 
-Redeploy the model with `./model-manager deploy <name> --wait` (from the Toolkit Manager repo root).
+Apply the change with `./toolkit_manager.sh install erag --env <name>`; it undeploys the old model and deploys the new one.
 
 ## Vector Database Selection
 
@@ -44,14 +46,12 @@ Selecting `mssql` requires accepting the Microsoft SQL Server EULA during deploy
 
 Starting with Redis 8.2, use `SVS-VAMANA` as the recommended vector index backend for Intel® Chatbot Toolkit deployments, especially for medium/large datasets. It is optimized for better memory efficiency and query throughput while maintaining high recall.
 
-These are Helm values, not Ansible variables, so set them in `deployment/components/edp/values.yaml` under `ingestion.config`:
+These are Helm values for the ingestion service, passed through `edp_ingestion_config` in `env/<name>/config.erag.yaml` (a nested dict; `vector_datatype` and `vector_dims` come from `vector_databases_*`):
 
 ```yaml
-ingestion:
-  config:
-    vector_algorithm: "SVS-VAMANA"     # FLAT | HNSW | SVS-VAMANA (default FLAT)
-    vector_datatype: "FLOAT32"
-    vector_distance_metric: "COSINE"
+edp_ingestion_config:
+  vector_algorithm: "SVS-VAMANA"     # FLAT | HNSW | SVS-VAMANA (default FLAT)
+  vector_distance_metric: "COSINE"    # L2 | IP | COSINE
 ```
 
 If your priority is faster index build time or compatibility with existing tuning profiles, `HNSW` remains a valid alternative.
@@ -61,7 +61,7 @@ The three supported vector algorithms:
 - **`HNSW`** - approximate nearest neighbor with fast index builds, good general-purpose choice
 - **`SVS-VAMANA`** - Intel-optimized approximate search with better memory efficiency and query throughput, recommended for medium/large datasets
 
-**Critical:** The retriever and ingestion services **must** use the same `vector_algorithm` and matching parameters. These settings are automatically propagated to the retriever from `edp.ingestion.config` in `config.erag.yaml`. If they mismatch, each service will create a separate index in Redis and queries will return no results. After changing the algorithm, re-upload all files so data is re-indexed with the new algorithm.
+**Critical:** The retriever and ingestion services **must** use the same `vector_algorithm` and matching parameters. Both read `VECTOR_ALGORITHM`, which defaults to `FLAT`, so check the retriever after changing it on ingestion. If they mismatch, each service will create a separate index in Redis and queries will return no results. After changing the algorithm, re-upload all files so data is re-indexed with the new algorithm.
 
 ### Verifying the Redis Vector Index
 
@@ -107,7 +107,7 @@ vector_databases_stores:
       tag: "8.2.2-svs"
 ```
 
-The index algorithm itself is a Helm value, not an Ansible variable. Set `ingestion.config.vector_algorithm` to `SVS-VAMANA` in `deployment/components/edp/values.yaml` (it accepts `FLAT`, `HNSW`, or `SVS-VAMANA`; the default is `FLAT`).
+The index algorithm itself is an ingestion Helm value: set `vector_algorithm: "SVS-VAMANA"` under `edp_ingestion_config` as above (it accepts `FLAT`, `HNSW`, or `SVS-VAMANA`; the default is `FLAT`).
 
 For detailed trade-offs and parameter tuning see Redis documentation:
 - Vector indexes overview: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/
@@ -149,7 +149,7 @@ Model servers (LLM, embedding, reranking) are deployed by **Intel® Inference To
 
 **Manual Configuration:**
 
-Edit the model entry in the catalog (`env/<name>/models-rag.yaml`), then redeploy with `./model-manager deploy <name> --wait`.
+Edit the model entry in the catalog (`env/<name>/models-rag.yaml`), then re-run `install erag`. A hand-edit of `cpu` or `memory` that leaves `replicas` alone is re-applied in place and can fail the core pre-flight; undeploy that model first (`MM_CONFIG=env/<name>/models-rag.yaml ./model-manager undeploy <name>`).
 
 - For machines with ≤64 physical cores per socket: use 1 replica per socket
 - For machines with >64 physical cores per socket (e.g., 96 or 128): use 2 replicas per socket
@@ -188,20 +188,7 @@ When running more than one vLLM instance and the system is accessed by 64+ concu
 
 Per-step CPU/memory/replica/HPA settings live in `deployment/pipelines/_shared/steps/<id>.yaml.j2` under a `resources:` block keyed `<name>-usvc`. These are aggregated by `deployment/scripts/compose_pipeline.py` when the pipeline is deployed.
 
-To override a step's resources for your environment, add an override in `env/<name>/config.erag.yaml`:
-
-```yaml
-# Example: override llm-usvc resources
-llm_usvc:
-  replicas: 2
-  resources:
-    requests:
-      cpu: 1
-      memory: 2Gi
-    limits:
-      cpu: 4
-      memory: 6Gi
-```
+`config.erag.yaml` has no per-step resource override. To change a step's resources, edit its `resources:` block in that step file, or copy the step to a local `steps/<id>.yaml.j2` in your flavour, which overrides the shared one. Then re-run `install erag`.
 
 See `deployment/scripts/calculate_replicas.py` for the replica calculation logic.
 
@@ -291,7 +278,7 @@ kubernetes_cpu_policy: nri-balloons  # Options: nri-balloons | kubelet-static | 
 
 `nri-balloons` (default) provides NUMA-aware pinning via the NRI plugin. The installer generates per-node `BalloonsPolicy` CRs based on the topology.
 
-For configuration details see [NRI CPU Balloons](https://github.com/intel/toolkit-manager/blob/main/docs/customize/nri_cpu_balloons.md) in Toolkit Manager docs.
+For configuration details see [NRI CPU Balloons](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/nri-cpu-balloons.md) in Toolkit Manager docs.
 
 ## Monitoring and Validation
 

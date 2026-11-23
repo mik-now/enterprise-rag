@@ -1,6 +1,6 @@
 # Deploy Intel® Chatbot Toolkit
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 Full deployment workflow: initialization, access, credentials, configuration, teardown.
 
@@ -10,7 +10,7 @@ One command installs: model servers, vector database, NATS, Enhanced Data Prepar
 
 ## Prerequisites
 
-The platform and Intel® Inference Toolkit must be installed first: [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/quickstart/quickstart.md). Hardware: [Prerequisites](../quickstart/prerequisites.md).
+The platform and Intel® Inference Toolkit must be installed first: [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/getting-started/quickstart.md). Hardware: [Prerequisites](../getting-started/prerequisites.md).
 
 ## Deployment workflow
 
@@ -20,7 +20,7 @@ The platform and Intel® Inference Toolkit must be installed first: [Platform Qu
 ### Step 1 - Initialize
 
 ```bash
-./es_auto_installer.sh init erag [--env <name>] [--flavour <name>]
+./toolkit_manager.sh init erag [--env <name>] [--flavour <name>]
 ```
 
 | Flavour | Use case |
@@ -30,6 +30,7 @@ The platform and Intel® Inference Toolkit must be installed first: [Platform Qu
 | `audioqna` | Voice-based QA |
 | `translation` | Language translation |
 | `pl_chatqna` | Polish-language RAG |
+| `chatqna_intel_gpu` | ChatQnA with the LLM on an Intel GPU (experimental) |
 
 Seeds `env/<name>/config.erag.yaml` from the flavour's defaults. Model catalog (`models-rag.yaml`) is seeded at install time.
 
@@ -43,18 +44,18 @@ Edit `env/<name>/config.erag.yaml`:
 | `pipeline_variant` | `base` \| `query-rewrite` \| `output_guard` \| `retrieve-rerank` \| `upload` | `base` |
 | `inference_models` | List: `name` + `role` (`llm` \| `embedding` \| `reranking`) | `llama3-8b-awq`, `nomic-embed`, `bge-reranker-v2-m3` |
 | `vector_databases_vector_store` | `redis-cluster` \| `mssql` \| `pgvector` | `redis-cluster` |
-| `mcp_enabled` | `true` \| `false` | `false` |
+| `mcp_enabled` | `true` \| `false` | `true` for `chatqna`, `audioqna`, `pl_chatqna`; `false` otherwise |
 | `hpa_enabled` | `true` \| `false` | `true` |
 
-Gated models: `export HF_TOKEN="hf_..."`. Minimum hardware (≤60 cores / 128 GB): [Prerequisites - Deploying on Minimum Hardware](../quickstart/prerequisites.md#deploying-on-minimum-hardware).
+Gated models: `export HF_TOKEN="hf_..."`. Minimum hardware (≤60 cores / 128 GB): [Prerequisites - Deploying on Minimum Hardware](../getting-started/prerequisites.md#deploying-on-minimum-hardware).
 
 ### Step 3 - Deploy
 
 ```bash
-./es_auto_installer.sh install erag [--env <name>]
+./toolkit_manager.sh install erag [--env <name>]
 ```
 
-Validates, deploys inference models, installs RAG components in dependency order, waits for readiness, writes credentials to `env/<name>/logs/rag/`. Takes 10-15 minutes.
+Validates, deploys inference models, installs RAG components in dependency order, waits for readiness, writes credentials to `env/<name>/logs/rag/`. Takes 15-20 minutes.
 
 Flags: `--env <name>`, `--only` (no deps), `--skip <names>`, `-- <ansible-args>`.
 
@@ -75,14 +76,14 @@ Gateway binds ports 80/443 on the cluster node via `hostPort`.
 **On cluster node:**
 
 ```bash
-echo "127.0.0.1 solutions.ai grafana.solutions.ai keycloak.solutions.ai s3.solutions.ai seaweedfs.solutions.ai" | sudo tee -a /etc/hosts
+echo "127.0.0.1 inteltoolkits.ai grafana.inteltoolkits.ai keycloak.inteltoolkits.ai s3.inteltoolkits.ai seaweedfs.inteltoolkits.ai" | sudo tee -a /etc/hosts
 ```
 
-Base domain from `base_domain_name` in `env/<name>/global_config.yaml` (default: `solutions.ai`). Each subdomain explicit - wildcards unsupported in `/etc/hosts`.
+Base domain from `base_domain_name` in `env/<name>/global_config.yaml` (default: `inteltoolkits.ai`). Each subdomain explicit - wildcards unsupported in `/etc/hosts`.
 
 **From another machine:** `ssh -L 443:localhost:443 user@<cluster-ip>`, then add same line to local `/etc/hosts`.
 
-URLs: `https://solutions.ai` (RAG UI), `https://keycloak.solutions.ai`, `https://grafana.solutions.ai`, `https://seaweedfs.solutions.ai`, `https://s3.solutions.ai`.
+URLs: `https://inteltoolkits.ai` (RAG UI), `https://keycloak.inteltoolkits.ai`, `https://grafana.inteltoolkits.ai`, `https://seaweedfs.inteltoolkits.ai`, `https://s3.inteltoolkits.ai`.
 
 > [!IMPORTANT]
 > With the default self-signed certificates, visit `https://s3.<base_domain_name>` in your browser and accept the warning **before** ingesting documents. Without it, uploads fail in the browser with no error from the cluster.
@@ -109,11 +110,11 @@ Secure credentials: `ansible-vault encrypt env/<name>/logs/rag/default_credentia
 
 ## Configure the deployment
 
-Edit `env/<name>/config.erag.yaml` and re-run `./es_auto_installer.sh install erag --env <name>`. Updates only affected components. See: [Pipeline Configuration](pipelines.md), [Advanced Configuration Guide](../customize/configuration.md).
+Edit `env/<name>/config.erag.yaml` and re-run `./toolkit_manager.sh install erag --env <name>`. Updates only affected components. See: [Pipeline Configuration](pipelines.md), [Advanced Configuration Guide](../configuration/configuration.md).
 
 ## Data ingestion, UI and telemetry
 
-Use **Data Ingestion** tab in **Admin Panel** (admin only; ChatQnA and AudioQnA only). User guides: [AudioQnA](../Intel_Chatbot_Toolkit_AudioQnA_User_Guide.pdf), [ChatQnA](../Intel_Chatbot_Toolkit_ChatQnA_User_Guide.pdf), [DocSum](../Intel_Chatbot_Toolkit_DocSum_User_Guide.pdf). Telemetry: [Telemetry Guide](../operate/telemetry.md).
+Use **Data Ingestion** tab in **Admin Panel** (admin only; ChatQnA and AudioQnA only). User guides: [AudioQnA](../Intel_Chatbot_Toolkit_AudioQnA_User_Guide.pdf), [ChatQnA](../Intel_Chatbot_Toolkit_ChatQnA_User_Guide.pdf), [DocSum](../Intel_Chatbot_Toolkit_DocSum_User_Guide.pdf). Telemetry: [Telemetry Guide](../configuration/telemetry.md).
 
 ## Single sign-on and SharePoint integration
 
@@ -127,12 +128,12 @@ erag_keycloak_oidc_client_secret: ""
 erag_keycloak_oidc_tenant_id: ""      # additionally enables SharePoint
 ```
 
-All empty = disabled. Partial config rejected. Apply: `./es_auto_installer.sh install erag --env <name>`. Full procedure: [Single Sign-On and SharePoint Integration](../customize/sharepoint.md).
+All empty = disabled. Partial config rejected. Apply: `./toolkit_manager.sh install erag --env <name>`. Full procedure: [Single Sign-On and SharePoint Integration](../configuration/sharepoint.md).
 
 ## Remove the installation
 
 ```bash
-./es_auto_installer.sh teardown erag --env <name>
+./toolkit_manager.sh teardown erag --env <name>
 ```
 
 Removes components in reverse order; models undeployed automatically.
@@ -145,13 +146,13 @@ Removes components in reverse order; models undeployed automatically.
 | Issue | Resolution |
 |-------|------------|
 | **Test deployment** | ChatQnA: `cd .../ext/enterprise.ai-erag/deployment && ./scripts/test_connection.sh`. DocSum: `./scripts/test_docsum.sh`. Translation: `./scripts/test_translation.sh`. |
-| **Debug tool** | [Debug Tool Guide](../operate/troubleshooting.md) collects diagnostics. |
-| **Status check** | `./es_auto_installer.sh status --env <name>` |
-| **Pods stuck pending** | `kubectl describe pod <name> -n <namespace>`. Minimum hardware: verify [tuning steps](../quickstart/prerequisites.md#deploying-on-minimum-hardware). |
+| **Debug tool** | [Debug Tool Guide](../faq-and-troubleshooting/troubleshooting.md) collects diagnostics. |
+| **Status check** | `./toolkit_manager.sh status --env <name>` |
+| **Pods stuck pending** | `kubectl describe pod <name> -n <namespace>`. Minimum hardware: verify [tuning steps](../getting-started/prerequisites.md#deploying-on-minimum-hardware). |
 | **Models not deploying** | Gated models: `export HF_TOKEN="hf_..."` before install. |
 | **Connection test fails** | Wait for all pods `Running` in pipeline namespace. |
 | **Install fails** | Check `env/<name>/logs/install-erag-*.log`, then re-run (idempotent). |
 
 ## Related documentation
 
-[Prerequisites](../quickstart/prerequisites.md), [Quickstart](../quickstart/quickstart.md), [Pipeline Configuration](pipelines.md), [Configuration Reference](../customize/configuration.md), [Platform Documentation](https://github.com/intel/toolkit-manager/blob/main/docs/README.md).
+[Prerequisites](../getting-started/prerequisites.md), [Quickstart](../getting-started/quickstart.md), [Pipeline Configuration](pipelines.md), [Configuration Reference](../configuration/configuration.md), [Platform Documentation](https://github.com/intel/toolkit-manager/blob/main/docs/README.md).

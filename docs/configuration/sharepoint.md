@@ -1,6 +1,6 @@
 # SharePoint Integration
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 Intel® Chatbot Toolkit can integrate with Microsoft SharePoint Online to ingest documents directly from SharePoint sites into the knowledge base.
 
@@ -70,13 +70,13 @@ A partial configuration is rejected at install time.
 Deploy or redeploy:
 
 ```bash
-./es_auto_installer.sh install erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 ```
 
 Re-check the configuration against the live cluster:
 
 ```bash
-./es_auto_installer.sh validate erag --env <name>
+./toolkit_manager.sh validate erag --env <name>
 ```
 
 ## Managing SharePoint sites
@@ -244,4 +244,4 @@ With RBAC disabled, every tracked site is returned to every caller.
 | Topic | Link |
 |-------|------|
 | Single Sign-On setup (required for SharePoint) | [Authentication](auth.md) (Part 1) |
-| EDP storage configuration | [object_store.md](object_store.md) |
+| EDP storage configuration | [object_store.md](object-store.md) |

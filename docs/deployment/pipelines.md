@@ -1,6 +1,6 @@
 # Pipeline Configuration
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 The pipeline is what your deployment actually does. It decides whether users get conversational answers over your documents, one-shot summaries, translations, or voice, and which steps a question passes through on the way to an answer.
 
@@ -10,11 +10,12 @@ Picking a pipeline is therefore the first product decision, not a tuning detail:
 
 | Flavour | Pipeline Type | Description | Variants |
 |---|---|---|---|
-| `chatqna` | `chatqna` | Conversational RAG (default) | `base`, `query-rewrite`, `output_guard`, `retrieve-rerank`, `upload` |
+| `chatqna` | `chatqna` | Conversational RAG (default) | `base`, `query-rewrite`, `output_guard`, `retrieve-rerank`, `upload` (`hybrid-retrieval` exists but is not deployable yet) |
 | `docsum` | `docsum` | Document summarization | `base` |
 | `translation` | `translation` | Language translation | `base` |
 | `audioqna` | `chatqna` | ChatQnA + voice | `base` |
 | `pl_chatqna` | `chatqna` | Polish-language RAG | `base` |
+| `chatqna_intel_gpu` | `chatqna` | ChatQnA with the LLM on an Intel GPU, embedding and reranking on CPU (experimental) | `base` |
 
 **Flavour:** name for `init erag --flavour <name>`; seeds `config.erag.yaml`. **Pipeline Type:** GMC service graph. **Variant:** graph modification; set via `pipeline_variant`.
 
@@ -40,20 +41,20 @@ pipeline_type: "chatqna"
 pipeline_variant: "query-rewrite"
 ```
 
-Deploy: `./es_auto_installer.sh install erag --env <name>`.
+Deploy: `./toolkit_manager.sh install erag --env <name>`.
 
 ## Pipeline architecture
 
 **ChatQnA (base):** Embedding → Retriever → Reranking → PromptTemplate → LLMGuardInput → LLM. Models (llm-inference ns): `llama3-8b-awq`, `nomic-embed`, `bge-reranker-v2-m3`.
 
 <div align="center">
-   <img alt="Intel® Chatbot Toolkit ChatQnA pipeline: the query is embedded, candidate documents are retrieved from the vector database and reranked, input guardrails and prompt templating are applied, and the LLM returns a grounded answer" src="../images/architecture_chatqna.svg" width="880">
+   <img alt="Intel® Chatbot Toolkit ChatQnA pipeline: the query is embedded, candidate documents are retrieved from the vector database and reranked, input guardrails and prompt templating are applied, and the LLM returns a grounded answer" src="../assets/architecture_chatqna.svg" width="880">
 </div>
 
 **DocSum:** TextExtractor → TextCompression → TextSplitter → LLM → DocSum.
 
 <div align="center">
-   <img alt="Intel® Chatbot Toolkit DocSum pipeline: an uploaded document is extracted, compressed, and split before the LLM produces a summary" src="../images/architecture_docsum.svg" width="880">
+   <img alt="Intel® Chatbot Toolkit DocSum pipeline: an uploaded document is extracted, compressed, and split before the LLM produces a summary" src="../assets/architecture_docsum.svg" width="880">
 </div>
 
 **Translation:** LanguageDetection → PromptTemplate → LLM. Model: `alma-7b-r`.
@@ -79,7 +80,7 @@ inference_models:
 mcp_enabled: false
 ```
 
-Deploy: `./es_auto_installer.sh install erag --env <name>`. The install undeploys the dropped LLM and reranking model servers and re-places the embedding one at its upload size - no manual `./model-manager undeploy` step.
+Deploy: `./toolkit_manager.sh install erag --env <name>`. The install undeploys the dropped LLM and reranking model servers and re-places the embedding one at its upload size - no manual `./model-manager undeploy` step.
 
 **Switching back to base:** restore the full model list, set `pipeline_variant: "base"`, re-enable `mcp_enabled` if it was on, re-install. The upload-sized embedding server is undeployed first (it takes the whole machine, so the LLM cannot be placed alongside it), then all three are deployed at base sizes. Weights stay on the `model-store` PVC, so nothing is re-downloaded.
 
@@ -92,7 +93,9 @@ pipeline_type: "docsum"
 pipeline_variant: "base"
 ```
 
-Deploy: `./es_auto_installer.sh install erag --env <name>`. Tears down old pipeline, deploys new. Vector store preserved (separate namespace). Models may be replaced/re-sized.
+Deploy: `./toolkit_manager.sh install erag --env <name>`. Tears down old pipeline, deploys new. Vector store preserved (separate namespace). Models may be replaced/re-sized.
+
+`pipeline_type` selects a graph (`chatqna`, `docsum`, `translation`). `audioqna`, `pl_chatqna` and `chatqna_intel_gpu` reuse the `chatqna` graph and differ in `audio_enabled`, `solution_language` and `kubernetes_accelerator`, so they are chosen with `init erag --flavour`, not by `pipeline_type`.
 
 ## Configuration file structure
 
@@ -116,7 +119,7 @@ inference_models:
 | **Keep embedding model consistent** | Changing embedding changes vector dims; index not auto-rebuilt. Re-ingest all documents. |
 
 > [!WARNING]
-> Changing the embedding model invalidates the existing vector index. Retrieval will return nothing useful until every document is re-ingested. See [Models](../customize/models.md#what-changes-the-embedding-model).
+> Changing the embedding model invalidates the existing vector index. Retrieval will return nothing useful until every document is re-ingested. See [Models](../configuration/models.md#what-changes-the-embedding-model).
 
 **When to use variants:**
 
@@ -127,4 +130,4 @@ inference_models:
 
 ## Related documentation
 
-[Install RAG Guide](install_rag.md), [Configuration Reference](../customize/configuration.md), [Modular Pipelines Reference](../../deployment/pipelines/README.md).
+[Install RAG Guide](install-rag.md), [Configuration Reference](../configuration/configuration.md), [Modular Pipelines Reference](../../deployment/pipelines/README.md).

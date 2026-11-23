@@ -28,7 +28,7 @@
   ansible.builtin.debug:
     msg: >-
       [UPGRADE] backup_enabled is false, so this upgrade has no restore point.
-      Enable it (see docs/operate/backup.md) to have the upgrade refuse to run without a
+      Enable it (see docs/deployment/backup-and-restore.md) to have the upgrade refuse to run without a
       fresh backup.
   when: not (backup_enabled | default(false) | bool)
 

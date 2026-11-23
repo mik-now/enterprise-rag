@@ -1,5 +1,7 @@
 # Docker Images
 
+[← Docs index](../README.md)
+
 Published Intel® Chatbot Toolkit Docker images, organized by component type.
 
 Default registry: `docker.io/intel`

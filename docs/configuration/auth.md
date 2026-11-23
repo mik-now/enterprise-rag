@@ -1,6 +1,6 @@
 # Authentication Integration
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 Intel® Chatbot Toolkit supports multi-factor authentication and Microsoft Active Directory federation through Keycloak.
 
@@ -13,7 +13,7 @@ MFA using Google Authenticator can be enabled on an already-running deployment t
 ### Prerequisites
 
 - Intel® Chatbot Toolkit deployed with Keycloak enabled
-- Keycloak admin credentials (available in `env/<name>/logs/rag/default_credentials.txt` after install)
+- Keycloak admin credentials: user `admin`, password in the `keycloak-admin-secret` Secret in namespace `keycloak` (`default_credentials.txt` holds the UI accounts of the `EnterpriseRAG` realm, not this one)
 
 ### Enable MFA
 
@@ -23,7 +23,7 @@ MFA using Google Authenticator can be enabled on an already-running deployment t
 
 3. Navigate to **Authentication → Flows**.
 
-![Login page screenshot](../images/keycloak/authentication_flow.png)
+![Login page screenshot](../assets/keycloak/authentication_flow.png)
 
 4. Select **Browser** from the Authentication Flows list.
 
@@ -33,7 +33,7 @@ MFA using Google Authenticator can be enabled on an already-running deployment t
 
 6. Set **Browser Conditional OTP** and **OTP Form** to **REQUIRED**.
 
-![Login page screenshot](../images/keycloak/authentication_browser.png)
+![Login page screenshot](../assets/keycloak/authentication_browser.png)
 
 ### Configure OTP policy
 
@@ -49,7 +49,7 @@ MFA using Google Authenticator can be enabled on an already-running deployment t
 
 3. Click **Save**.
 
-![Login page screenshot](../images/keycloak/OTP_Policy.png)
+![Login page screenshot](../assets/keycloak/OTP_Policy.png)
 
 ### Enforce MFA for all users
 
@@ -61,15 +61,31 @@ MFA using Google Authenticator can be enabled on an already-running deployment t
 
 4. Click **Save**.
 
-![Login page screenshot](../images/keycloak/required_actions.png)
+![Login page screenshot](../assets/keycloak/required_actions.png)
 
 Users will be prompted to set up an OTP device the next time they log in. Follow the on-screen instructions to link Google Authenticator, which will then generate 6-digit codes for each login.
 
-![Login page screenshot](../images/keycloak/mobile_authenticator_setup.png)
+![Login page screenshot](../assets/keycloak/mobile_authenticator_setup.png)
+
+## Active Directory federation
+
+Set these in `env/<name>/config.erag.yaml`, then re-run `install erag`. A non-empty `erag_keycloak_federation_endpoint` turns it on, and Keycloak maps the directory groups below to the toolkit's admin, maintainer and user roles:
+
+```yaml
+erag_keycloak_federation_endpoint: "ldaps://ad.example.com"
+erag_keycloak_federation_bind_dn: ""
+erag_keycloak_federation_bind_password: ""
+erag_keycloak_federation_users_dn: ""
+erag_keycloak_federation_user_attribute: "sAMAccountName"
+erag_keycloak_federation_groups_dn: ""
+erag_keycloak_federation_admin_group_ldap_filter: "(cn=erag-admin-group)"
+erag_keycloak_federation_maintainer_group_ldap_filter: "(cn=erag-maintainer-group)"
+erag_keycloak_federation_user_group_ldap_filter: "(cn=erag-user-group)"
+```
 
 ## Related docs
 
 | Topic | Link |
 |-------|------|
 | Single Sign-On with Microsoft Entra ID | [sharepoint.md](sharepoint.md) |
-| Toolkit Manager configuration | [`../../docs/customize/configuration.md`](https://github.com/intel/toolkit-manager/blob/main/docs/customize/configuration.md) |
+| Toolkit Manager configuration | [`docs/configuration/configuration.md`](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/configuration.md) |

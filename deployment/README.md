@@ -4,8 +4,8 @@ This directory is the plug-in that Toolkit Manager installs as the `erag` target
 
 | Topic | Guide |
 |---|---|
-| Install, access, credentials, teardown, troubleshooting | [Deploy Intel® Chatbot Toolkit](../docs/deploy/install_rag.md) |
+| Install, access, credentials, teardown, troubleshooting | [Deploy Intel® Chatbot Toolkit](../docs/deployment/install-rag.md) |
 | What this directory contains and how Toolkit Manager consumes it | [Architecture](../docs/reference/architecture.md) |
-| Every setting in `config.erag.yaml` | [Configuration Reference](../docs/customize/configuration.md) |
-| Flavours and variants | [Pipelines](../docs/deploy/pipelines.md) |
+| Every setting in `config.erag.yaml` | [Configuration Reference](../docs/configuration/configuration.md) |
+| Flavours and variants | [Pipelines](../docs/deployment/pipelines.md) |
 | Pipeline internals: steps, variants, the composer | [`pipelines/README.md`](pipelines/README.md) |

@@ -1,6 +1,6 @@
 # Building Images
 
-[← Customize](../README.md#customize)
+[← Docs index](../README.md)
 
 Intel® Chatbot Toolkit provides the ability to build Docker images locally instead of using pre-built images from public registries. This is useful for custom modifications, security requirements, or development and testing.
 
@@ -26,7 +26,7 @@ registry: "docker.io/intel"    # Default: public registry
 
 ## Build and push images
 
-The `update_images.sh` script builds microservice images from source and pushes them to a specified registry. The script consists of three main steps: build images, set up the registry, and push the images. To execute all at once:
+The `deployment/update_images.sh` script builds microservice images from source and pushes them to a specified registry. Run it from `ext/enterprise.ai-erag/deployment`. The script consists of three main steps: build images, set up the registry, and push the images. To execute all at once:
 
 ```bash
 ./update_images.sh --build --setup-registry --push
@@ -124,4 +124,4 @@ This uploads all built images to the registry specified during setup.
 | Topic | Link |
 |-------|------|
 | Image registry map and Dockerfiles | `deployment/images.yaml` |
-| Toolkit Manager configuration | [`../../docs/customize/configuration.md`](https://github.com/intel/toolkit-manager/blob/main/docs/customize/configuration.md) |
+| Toolkit Manager configuration | [`docs/configuration/configuration.md`](https://github.com/intel/toolkit-manager/blob/main/docs/configuration/configuration.md) |

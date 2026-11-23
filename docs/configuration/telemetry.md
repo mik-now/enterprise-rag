@@ -1,12 +1,14 @@
 # Telemetry
 
+[← Docs index](../README.md)
+
 Intel® Chatbot Toolkit services emit metrics, logs, and traces to the platform observability stack (Prometheus + Grafana + Loki + Tempo). This doc covers accessing Grafana and the chatbot dashboards.
 
 ## Login
 
-Visit `https://grafana.<base_domain_name>` (default: `https://grafana.solutions.ai`).
+Visit `https://grafana.<base_domain_name>` (default: `https://grafana.inteltoolkits.ai`).
 
-![login screenshot](../images/telemetry/login.png)
+![login screenshot](../assets/telemetry/login.png)
 
 Two sign-in methods:
 
@@ -28,7 +30,7 @@ On the Grafana login page, select **Sign in with Keycloak** and sign in with you
 
 Click **Dashboards** in the left pane. Dashboards prefixed with `Chatbot Toolkit` are tailored to Intel® Chatbot Toolkit services. The Grafana instance also provides standard Kubernetes, Node Exporter, and Prometheus Overview dashboards for cluster-level monitoring.
 
-![dashboard](../images/telemetry/dashboards.png)
+![dashboard](../assets/telemetry/dashboards.png)
 
 Eight dashboards ship with this toolkit, each provisioned by the component that owns it:
 
@@ -51,7 +53,7 @@ The three most-used ones are described below.
 
 Overview of resource usage and service activity for selected namespace and services.
 
-![Dashboard Chatbot Toolkit / Services / Details](../images/telemetry/dashboard_01_services_details.png)
+![Dashboard Chatbot Toolkit / Services / Details](../assets/telemetry/dashboard_01_services_details.png)
 
 Key panels:
 - **System Resource Utilization**: CPU and memory usage per service
@@ -63,7 +65,7 @@ Key panels:
 
 Metrics from the Enhanced Data Preparation (EDP) service: ingested documents, links, chunks, and processing statuses.
 
-![Dashboard Chatbot Toolkit / Services / EDP](../images/telemetry/dashboard_02_services_edp.png)
+![Dashboard Chatbot Toolkit / Services / EDP](../assets/telemetry/dashboard_02_services_edp.png)
 
 Key panels:
 - **General**: Total ingested files and links, chunks, blocked documents (unsafe content), files in error state
@@ -77,7 +79,7 @@ See [EDP documentation](../../src/edp/README.md) for service details.
 
 Horizontal Pod Autoscaler activity: replica count, scaling actions over time, and the metrics used for scaling decisions (current value + threshold).
 
-![Dashboard Chatbot Toolkit / HPA](../images/telemetry/dashboard_03_hpa.png)
+![Dashboard Chatbot Toolkit / HPA](../assets/telemetry/dashboard_03_hpa.png)
 
 The top panel shows current replica count for each HPA-managed service. Below, each service has a section with replica changes over time and the scaling metric.
 
@@ -87,7 +89,7 @@ See [Horizontal Pod Autoscaling](performance.md#horizontal-pod-autoscaling).
 
 Intel® Chatbot Toolkit relies on the **Intel® Inference Toolkit** component for LLM model serving. Models are served on vLLM or OpenVINO backends; Grafana provides dashboards for the backend in use. All AI Inference dashboards are tagged with `modelserving`, making them easy to find by filtering dashboards using that tag.
 
-![EnterpriseAIInference / ModelServing / vLLM](../images/telemetry/dashboard_04_llm_inference.png)
+![EnterpriseAIInference / ModelServing / vLLM](../assets/telemetry/dashboard_04_llm_inference.png)
 
 Example dashboard: `EnterpriseAIInference / ModelServing / vLLM`
 
@@ -101,7 +103,7 @@ Typical panels:
 
 In the left panel, select **Explore -> Logs** to access Grafana's integrated log exploration feature. View, search, and filter logs with advanced filtering, real-time streaming, and contextual log inspection.
 
-![Logs Drilldown View](../images/telemetry/explore_logs.png)
+![Logs Drilldown View](../assets/telemetry/explore_logs.png)
 
 For more on using this feature see [Grafana Logs Drilldown documentation](https://grafana.com/docs/grafana-cloud/visualizations/simplified-exploration/logs/get-started/).
 

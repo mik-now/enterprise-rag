@@ -46,7 +46,7 @@
       Storage backend is netapp-trident but EDP keeps using '{{ edp_storage_type }}'. To
       serve documents from ONTAP S3, set ontap_s3_data_lif plus
       edp_s3_compatible_access_key_id / edp_s3_compatible_secret_access_key; everything
-      else is derived. See docs/netapp_ontap_s3.md.
+      else is derived. See docs/configuration/object-store.md.
   when:
     - not (_edp_ontap_s3_active | bool)
     - _edp_storage_backend == 'netapp-trident'

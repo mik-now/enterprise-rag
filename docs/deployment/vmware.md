@@ -1,12 +1,12 @@
 # Deploy on VMware
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 <p align="center">
-    <img src="../images/vmware-logo.png" alt="VMware by Broadcom" width="500" />
+    <img src="../assets/vmware-logo.png" alt="VMware by Broadcom" width="500" />
 </p>
 
-This guide covers deploying Intel® Chatbot Toolkit onto virtual machines running on VMware vSphere: how many VMs to size, what the hypervisor has to expose for Intel AMX to be usable inside the guests, and the install steps that differ from a bare-metal deployment. The general install flow is unchanged, so read [Deploy Intel® Chatbot Toolkit](install_rag.md) alongside it.
+This guide covers deploying Intel® Chatbot Toolkit onto virtual machines running on VMware vSphere: how many VMs to size, what the hypervisor has to expose for Intel AMX to be usable inside the guests, and the install steps that differ from a bare-metal deployment. The general install flow is unchanged, so read [Deploy Intel® Chatbot Toolkit](install-rag.md) alongside it.
 
 ## Capacity Requirements
 
@@ -76,29 +76,29 @@ SSH into one of the VMs (for example vm3), clone Toolkit Manager, and let it pre
 git clone https://github.com/intel/toolkit-manager.git
 cd toolkit-manager
 
-./es_auto_installer.sh configure
-./es_auto_installer.sh init erag
+./toolkit_manager.sh configure
+./toolkit_manager.sh init erag
 ```
 
 `init erag` clones this repository and Intel® Inference Toolkit into `ext/` at their pinned revisions. Every command from here runs from this directory.
 
 ### 2. Deploy the Kubernetes cluster on vSphere
 
-Describe the VMs in `env/local/nodes.yaml` and `env/local/inventory/hosts.yaml`, then let the installer provision the cluster. See the Toolkit Manager [Multi-Node and BYO Cluster guide](https://github.com/intel/toolkit-manager/blob/main/docs/deploy/topologies.md).
+Describe the VMs in `env/local/nodes.yaml` and `env/local/inventory/hosts.yaml`, then let the installer provision the cluster. See the Toolkit Manager [Multi-Node and BYO Cluster guide](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/multi-node.md).
 
 If vSphere already provides the cluster, set `existing_kubernetes` in `env/local/global_config.yaml` to its kubeconfig path instead.
 
 ### 3. Deploy Intel® Chatbot Toolkit
 
 ```bash
-./es_auto_installer.sh install erag
+./toolkit_manager.sh install erag
 ```
 
-This pulls in the `infrastructure`, `platform`, and `inference` installer targets first. Full walkthrough → [Deploy Intel® Chatbot Toolkit](install_rag.md).
+This pulls in the `infrastructure`, `platform`, and `inference` installer targets first. Full walkthrough → [Deploy Intel® Chatbot Toolkit](install-rag.md).
 
 ## Debugging Commands
 
-For comprehensive debugging guidance, see [Troubleshooting](../operate/troubleshooting.md).
+For comprehensive debugging guidance, see [Troubleshooting](../faq-and-troubleshooting/troubleshooting.md).
 
 | Command | What it does |
 |---|---|

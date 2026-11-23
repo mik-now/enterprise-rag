@@ -1,6 +1,6 @@
 # Quick Start
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 Toolkit Manager installs and operates Intel® Chatbot Toolkit on the platform. The install target is `erag`.
 
@@ -22,7 +22,7 @@ Run from the Toolkit Manager repo root:
 ```bash
 git clone https://github.com/intel/toolkit-manager.git
 cd toolkit-manager
-./es_auto_installer.sh configure
+./toolkit_manager.sh configure
 ```
 
 ## Step 2 - Install the platform (optional)
@@ -32,29 +32,29 @@ cd toolkit-manager
 To stage the platform separately, for example to confirm model serving works before adding the chatbot:
 
 ```bash
-./es_auto_installer.sh install inference --env local
+./toolkit_manager.sh install inference --env local
 ```
 
-For multi-node or bring-your-own-Kubernetes, see the [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/quickstart/quickstart.md).
+For multi-node or bring-your-own-Kubernetes, see the [Platform Quickstart](https://github.com/intel/toolkit-manager/blob/main/docs/getting-started/quickstart.md).
 
 ## Step 3 - Initialize the chatbot
 
 ```bash
-./es_auto_installer.sh init erag --env local
+./toolkit_manager.sh init erag --env local
 ```
 
 Seeds `env/local/config.erag.yaml`. Default flavour is `chatqna`. Others:
 
 ```bash
-./es_auto_installer.sh init erag --env local --flavour docsum        # document summarization
-./es_auto_installer.sh init erag --env local --flavour audioqna      # voice-enabled ChatQnA
-./es_auto_installer.sh init erag --env local --flavour translation   # language translation
+./toolkit_manager.sh init erag --env local --flavour docsum        # document summarization
+./toolkit_manager.sh init erag --env local --flavour audioqna      # voice-enabled ChatQnA
+./toolkit_manager.sh init erag --env local --flavour translation   # language translation
 ```
 
-Available: `chatqna`, `docsum`, `audioqna`, `translation`, `pl_chatqna`.
+Available: `chatqna`, `docsum`, `audioqna`, `translation`, `pl_chatqna`, `chatqna_intel_gpu` (experimental).
 
 > [!NOTE]
-> The flavour is chosen at `init` time. Re-running `init erag --flavour <other>` on an existing environment is refused so your edits are not overwritten: use a fresh `--env`, or delete `env/<name>/config.erag.yaml` to reseed. To change the pipeline **after** installing, edit `pipeline_type` in `config.erag.yaml` and re-run `install erag` instead. See [Pipelines](../deploy/pipelines.md#switching-pipelines).
+> The flavour is chosen at `init` time. Re-running `init erag --flavour <other>` on an existing environment is refused so your edits are not overwritten: use a fresh `--env`, or delete `env/<name>/config.erag.yaml` to reseed. To change the pipeline **after** installing, edit `pipeline_type` in `config.erag.yaml` and re-run `install erag` instead. See [Pipelines](../deployment/pipelines.md#switching-pipelines).
 
 ## Step 4 - Configure (optional)
 
@@ -81,17 +81,17 @@ For the limited single-user deployment (32 cores / 64 GB RAM), see [Prerequisite
 ## Step 5 - Deploy
 
 ```bash
-./es_auto_installer.sh install erag --env local
+./toolkit_manager.sh install erag --env local
 ```
 
-Installs: model servers, vector database, RAG microservices, EDP pipeline, UI, Keycloak. Takes 15-20 minutes.
+Installs: model servers, vector database, RAG microservices, EDP pipeline, UI, Keycloak. Takes 15-20 minutes once the platform is up.
 
 ## Step 6 - Verify
 
 ```bash
 export KUBECONFIG=$(pwd)/env/local/kubeconfig.yaml
 kubectl get pods -n llm-inference; kubectl get pods -n chatqna; kubectl get pods -n edp
-./es_auto_installer.sh status --env local
+./toolkit_manager.sh status --env local
 ```
 
 Test the pipeline:
@@ -110,11 +110,11 @@ Ports 80/443 bind on the cluster node via `hostPort`.
 **On the cluster node:**
 
 ```bash
-echo "127.0.0.1 solutions.ai grafana.solutions.ai keycloak.solutions.ai s3.solutions.ai seaweedfs.solutions.ai" | sudo tee -a /etc/hosts
+echo "127.0.0.1 inteltoolkits.ai grafana.inteltoolkits.ai keycloak.inteltoolkits.ai s3.inteltoolkits.ai seaweedfs.inteltoolkits.ai" | sudo tee -a /etc/hosts
 ```
 
 > [!IMPORTANT]
-> Every subdomain must be listed explicitly. Wildcards do not work in `/etc/hosts`, and a missing entry shows up as a connection failure in the browser rather than as an error from the cluster. Replace `solutions.ai` with your `base_domain_name` if you changed it.
+> Every subdomain must be listed explicitly. Wildcards do not work in `/etc/hosts`, and a missing entry shows up as a connection failure in the browser rather than as an error from the cluster. Replace `inteltoolkits.ai` with your `base_domain_name` if you changed it.
 
 **From another machine:**
 
@@ -126,9 +126,9 @@ Then add the same line to your local `/etc/hosts`.
 
 **URLs:**
 
-- RAG UI: `https://solutions.ai`
-- Keycloak: `https://keycloak.solutions.ai`
-- Grafana: `https://grafana.solutions.ai`
+- RAG UI: `https://inteltoolkits.ai`
+- Keycloak: `https://keycloak.inteltoolkits.ai`
+- Grafana: `https://grafana.inteltoolkits.ai`
 
 **Credentials:** `env/local/logs/rag/default_credentials.txt` for the UI accounts and `default_credentials.yaml` for the services (one-time passwords; change after first login).
 
@@ -138,15 +138,15 @@ Then add the same line to your local `/etc/hosts`.
 kubectl -n keycloak get secret platform-bootstrap-admin -o jsonpath='{.data.value}' | base64 -d; echo
 ```
 
-The local `admin` signs in on the same login form; see [Telemetry](../operate/telemetry.md#login).
+The local `admin` signs in on the same login form; see [Telemetry](../configuration/telemetry.md#login).
 
 ## Next steps
 
-- [Install RAG Guide](../deploy/install_rag.md) - full deployment options and troubleshooting
-- [Pipeline Configuration](../deploy/pipelines.md) - switch pipelines and variants
-- [Configuration Reference](../customize/configuration.md) - model selection, multi-node, external endpoints
-- [Data Ingestion](../deploy/install_rag.md#data-ingestion-ui-and-telemetry) - add documents
-- [Teardown](../deploy/install_rag.md#remove-the-installation) - clean removal
+- [Install RAG Guide](../deployment/install-rag.md) - full deployment options and troubleshooting
+- [Pipeline Configuration](../deployment/pipelines.md) - switch pipelines and variants
+- [Configuration Reference](../configuration/configuration.md) - model selection, multi-node, external endpoints
+- [Data Ingestion](../deployment/install-rag.md#data-ingestion-ui-and-telemetry) - add documents
+- [Teardown](../deployment/install-rag.md#remove-the-installation) - clean removal
 
 ## Troubleshooting
 

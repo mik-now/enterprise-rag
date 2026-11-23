@@ -1,10 +1,10 @@
-![Intel® Chatbot Toolkit](docs/images/banner.png)
+![Intel® Chatbot Toolkit](docs/assets/banner.png)
 # Intel® Chatbot Toolkit
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Installed and operated by: Toolkit Manager](https://img.shields.io/badge/Installed%20and%20operated%20by-Toolkit%20Manager-0068B5)](https://github.com/intel/toolkit-manager)
 [![Platform: Intel® Xeon®](https://img.shields.io/badge/Platform-Intel%C2%AE%20Xeon%C2%AE-0068B5)](https://www.intel.com/xeon)
-[![Pipelines: ChatQnA · DocSum · AudioQnA](https://img.shields.io/badge/Pipelines-ChatQnA%20%C2%B7%20DocSum%20%C2%B7%20AudioQnA-purple)](docs/deploy/pipelines.md)
+[![Pipelines: ChatQnA · DocSum · AudioQnA](https://img.shields.io/badge/Pipelines-ChatQnA%20%C2%B7%20DocSum%20%C2%B7%20AudioQnA-purple)](docs/deployment/pipelines.md)
 [![Identity: Keycloak](https://img.shields.io/badge/Identity-Keycloak%20OIDC-orange)](https://www.keycloak.org)
 
 **Turn your documents into a governed, production-ready AI assistant on Intel® Xeon® CPUs. Toolkit Manager installs and operates this toolkit.**
@@ -14,10 +14,10 @@
 > [!IMPORTANT]
 > **This repository is not used on its own.**
 > [**Toolkit Manager**](https://github.com/intel/toolkit-manager)
-> installs and operates it. Install the platform first. Toolkit Manager clones this repository to
+> installs and operates it. Toolkit Manager clones this repository to
 > `ext/enterprise.ai-erag/` and brings up the Kubernetes cluster, the platform services
 > (cert-manager, Istio, MetalLB, Envoy Gateway, PostgreSQL, Keycloak,
-> MinIO, observability), and Intel® Inference Toolkit that this toolkit depends on.
+> SeaweedFS, observability), and Intel® Inference Toolkit that this toolkit depends on.
 > Every command below runs from the **Toolkit Manager repo root**, not from here.
 
 ---
@@ -28,7 +28,7 @@ Intel® Chatbot Toolkit deploys that whole path. You pick a pipeline flavour, ru
 
 Pipelines are composed, not hardcoded. A flavour declares an ordered flow of steps, the composer renders it into a `GMConnector` resource, and the GMC operator reconciles the microservices behind it. Swapping a retrieval strategy or adding output guardrails is a config change, not a rewrite.
 
-> Want the full picture? See [Architecture](docs/reference/architecture.md) and [Pipelines](docs/deploy/pipelines.md).
+> Want the full picture? See [Architecture](docs/reference/architecture.md) and [Pipelines](docs/deployment/pipelines.md).
 
 ### What makes it production-ready
 
@@ -44,10 +44,10 @@ Pipelines are composed, not hardcoded. A flavour declares an ordered flow of ste
 A question enters through the gateway, is authenticated against Keycloak, and reaches the pipeline router. The router walks the composed flow - embed the query, retrieve candidates from the vector database, rerank them, apply input guardrails, build the prompt, and call the LLM - then streams the grounded answer back. Model inference is served by Intel® Inference Toolkit, so this toolkit runs no model servers of its own.
 
 <div align="center">
-   <img alt="Intel® Chatbot Toolkit ChatQnA architecture: a request from the UI enters the gateway, is authenticated, and passes through embedding, retrieval from the vector database, reranking, guardrails, and prompt templating before reaching the LLM, with document ingestion feeding the vector database from the object store" src="./docs/images/architecture_chatqna.svg" width="900">
+   <img alt="Intel® Chatbot Toolkit ChatQnA architecture: a request from the UI enters the gateway, is authenticated, and passes through embedding, retrieval from the vector database, reranking, guardrails, and prompt templating before reaching the LLM, with document ingestion feeding the vector database from the object store" src="./docs/assets/architecture_chatqna.svg" width="900">
 </div>
 
-DocSum's flow is shown in [architecture_docsum.svg](./docs/images/architecture_docsum.svg), and the full microservice map in [microservices_architecture.png](./docs/microservices_architecture.png).
+DocSum's flow is shown in [architecture_docsum.svg](./docs/assets/architecture_docsum.svg), and the full microservice map in [microservices_architecture.png](./docs/assets/microservices_architecture.png).
 
 See the [Architecture reference](docs/reference/architecture.md) for the component inventory, the roles that deploy them, and how this toolkit plugs into the platform.
 
@@ -60,7 +60,7 @@ See the [Architecture reference](docs/reference/architecture.md) for the compone
 > [!NOTE]
 > **Prerequisites:** a Xeon host with 60 logical cores, 128 GB RAM, and 200 GB free disk;
 > Ubuntu 22.04/24.04; passwordless sudo; internet access; and Hugging Face access to the
-> default models. Full list, including the 32-core limited deployment → [Prerequisites](docs/quickstart/prerequisites.md).
+> default models. Full list, including the 32-core limited deployment → [Prerequisites](docs/getting-started/prerequisites.md).
 
 ### Step 1 - Install the stack
 
@@ -70,22 +70,22 @@ See the [Architecture reference](docs/reference/architecture.md) for the compone
 git clone https://github.com/intel/toolkit-manager.git
 cd toolkit-manager
 
-./es_auto_installer.sh configure     # one-time machine prep (Python 3.11+, yq, kubectl, helm)
-./es_auto_installer.sh init erag     # clone this toolkit and its dependencies
-./es_auto_installer.sh install erag  # deploy everything
+./toolkit_manager.sh configure     # one-time machine prep (Python 3.11+, yq, kubectl, helm)
+./toolkit_manager.sh init erag     # clone this toolkit and its dependencies
+./toolkit_manager.sh install erag  # deploy everything
 ```
 
 Settings for this toolkit land in `env/local/config.erag.yaml`. Pick a different pipeline with `--flavour`:
 
 ```bash
-./es_auto_installer.sh init erag --flavour docsum
+./toolkit_manager.sh init erag --flavour docsum
 ```
 
 > [!NOTE]
 > For any parameters, customization options or multinode deployment, refer to [documentation](docs/).
 
 > [!TIP]
-> `--env` defaults to `local`. Tear down with `./es_auto_installer.sh teardown erag`.
+> `--env` defaults to `local`. Tear down with `./toolkit_manager.sh teardown erag`.
 > Install and teardown are environment-scoped: if you installed with `--env prod`, you must
 > tear down with `--env prod`.
 
@@ -94,13 +94,13 @@ Settings for this toolkit land in `env/local/config.erag.yaml`. Pick a different
 The gateway binds ports 80 and 443 on the node, so no port forwarding is needed. Add each subdomain to `/etc/hosts` on the machine you browse from - wildcards do not work there:
 
 ```
-<node-ip> solutions.ai grafana.solutions.ai keycloak.solutions.ai s3.solutions.ai seaweedfs.solutions.ai
+<node-ip> inteltoolkits.ai grafana.inteltoolkits.ai keycloak.inteltoolkits.ai s3.inteltoolkits.ai seaweedfs.inteltoolkits.ai
 ```
 
-Then open `https://solutions.ai`. First-login credentials are written to `env/local/logs/rag/default_credentials.txt`; you will be asked to change the password immediately.
+Then open `https://inteltoolkits.ai`. First-login credentials are written to `env/local/logs/rag/default_credentials.txt`; you will be asked to change the password immediately.
 
 > [!IMPORTANT]
-> With the default self-signed certificates, visit `https://s3.solutions.ai` once and accept
+> With the default self-signed certificates, visit `https://s3.inteltoolkits.ai` once and accept
 > the warning before ingesting documents. Not needed with custom certificates.
 
 ### Step 3 - Ingest a document and ask about it
@@ -129,7 +129,7 @@ Curious first? The demo below shows ChatQnA in action.
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=wWcUNle1kkg">
-    <img alt="Intel® Chatbot Toolkit ChatQnA demonstration video" src="./docs/images/yt_thumbnail.png">
+    <img alt="Intel® Chatbot Toolkit ChatQnA demonstration video" src="./docs/assets/yt_thumbnail.png">
   </a>
 </div>
 
@@ -145,22 +145,22 @@ The Quick Start deploys the ChatQnA flavour with defaults. From here you can cha
 
 | Goal | Guide |
 |---|---|
-| Deploy step by step, endpoints and credentials | [Deploy Intel® Chatbot Toolkit](docs/deploy/install_rag.md) |
-| Pipelines, flavours, and variants | [Pipelines](docs/deploy/pipelines.md) |
-| Every configuration option | [Configuration](docs/customize/configuration.md) |
-| Change the LLM, embedding, or reranking model | [Models](docs/customize/models.md) |
-| SSO, MFA, and Active Directory federation | [Authentication](docs/customize/auth.md) |
-| Ingest from SharePoint Online | [SharePoint](docs/customize/sharepoint.md) |
-| Connect AI agents | [MCP Integration](docs/customize/mcp.md) |
-| External S3 or NetApp ONTAP document store | [Object Store](docs/customize/object_store.md) |
+| Deploy step by step, endpoints and credentials | [Deploy Intel® Chatbot Toolkit](docs/deployment/install-rag.md) |
+| Pipelines, flavours, and variants | [Pipelines](docs/deployment/pipelines.md) |
+| Every configuration option | [Configuration](docs/configuration/configuration.md) |
+| Change the LLM, embedding, or reranking model | [Models](docs/configuration/models.md) |
+| SSO, MFA, and Active Directory federation | [Authentication](docs/configuration/auth.md) |
+| Ingest from SharePoint Online | [SharePoint](docs/configuration/sharepoint.md) |
+| Connect AI agents | [MCP Integration](docs/configuration/mcp.md) |
+| External S3 or NetApp ONTAP document store | [Object Store](docs/configuration/object-store.md) |
 | Components, roles, and request flow | [Architecture](docs/reference/architecture.md) |
-| Dashboards and logs | [Telemetry](docs/operate/telemetry.md) |
-| Scaling and tuning | [Performance](docs/operate/performance.md) |
-| Something isn't working | [Troubleshooting](docs/operate/troubleshooting.md) |
-| VMware deployment | [Deploy on VMware](docs/deploy/vmware.md) |
-| What it is and why it exists | [Meet Intel® Chatbot Toolkit](docs/meet/meet.md) |
-| Common questions | [FAQ](docs/faq.md) |
-| Terminology | [Glossary](docs/glossary.md) |
+| Dashboards and logs | [Telemetry](docs/configuration/telemetry.md) |
+| Scaling and tuning | [Performance](docs/configuration/performance.md) |
+| Something isn't working | [Troubleshooting](docs/faq-and-troubleshooting/troubleshooting.md) |
+| VMware deployment | [Deploy on VMware](docs/deployment/vmware.md) |
+| What it is and why it exists | [Meet Intel® Chatbot Toolkit](docs/overview/meet.md) |
+| Common questions | [FAQ](docs/faq-and-troubleshooting/frequently-asked-questions.md) |
+| Terminology | [Glossary](docs/reference/glossary.md) |
 
 ---
 

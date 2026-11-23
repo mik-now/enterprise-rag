@@ -1,5 +1,7 @@
 # Backup and Restore
 
+[← Docs index](../README.md)
+
 Intel® Chatbot Toolkit can back up and restore everything a deployment has accumulated —
 ingested documents, embeddings, conversations, and the accounts and roles in the identity realm —
 through the platform's Velero-based backup mechanism. Opt-in and off by default.
@@ -7,7 +9,7 @@ through the platform's Velero-based backup mechanism. Opt-in and off by default.
 The platform provides the mechanism (Velero, CSI volume snapshots, the profile-driven engine). This
 toolkit declares what its own data is and drives that engine against it. See
 [Toolkit Manager](https://github.com/intel/toolkit-manager)'s
-`docs/customize/configuration.md` for the platform settings (`velero_enabled`,
+`docs/configuration/configuration.md` for the platform settings (`velero_enabled`,
 `storage_backend`).
 
 ## Enabling it
@@ -30,20 +32,19 @@ concluding a run "did nothing" is a defect.
 
 ## Running a backup or restore
 
-```bash
-export KUBECONFIG=env/<name>/kubeconfig.yaml
-.venv/bin/ansible-playbook -i env/<name>/inventory/hosts.yaml \
-  -e env_dir=$(pwd)/env/<name> \
-  -e @env/<name>/global_config.yaml -e @env/<name>/config.erag.yaml \
-  -e kubernetes_kubeconfig=$(pwd)/env/<name>/kubeconfig.yaml \
-  ext/enterprise.ai-erag/deployment/backup.yaml -e backup_action=backup
+Run these from the Toolkit Manager root. `run_backup.sh` takes the layer, not a component:
 
-# restore: same invocation with -e backup_action=restore -e backup_confirm=yes
-# (without backup_confirm=yes a restore stops at a confirmation prompt, before
-#  anything is deleted)
+```bash
+./run_backup.sh backup  erag --env <name>
+./run_backup.sh list    erag --env <name>     # marks the backup a restore would pick
+./run_backup.sh restore erag --env <name>     # asks before it deletes anything; --force skips the prompt
 ```
 
-Run this from a workstation, not from a pod. `kubernetes.core` prefers an in-cluster
+It logs to `env/<name>/logs/backup-erag-<timestamp>.log`. Take the backup before you move the checkout to
+a newer release: the profile is read from the checkout, so a backup is refused when the checkout's version
+differs from the installed one.
+
+Run it from a workstation, not from a pod. `kubernetes.core` prefers an in-cluster
 service-account token over `KUBECONFIG` whenever one exists, so invoking the engine from inside the
 cluster (a CI agent, for instance) can silently talk to the agent's own cluster instead of the one
 named by `KUBECONFIG`. Unset `http_proxy`/`https_proxy` too — the engine only ever calls the target
@@ -63,8 +64,7 @@ running both, the bare name resolves to that one and returns an empty list inste
 
 ### Restoring from a specific backup, not the latest one
 
-A restore with no further options replays the newest `Completed` backup that carries this profile's
-label. To go back further — an N-2 backup, or any specific one — list the candidates and name one
+A restore with no further options replays the newest `Completed` backup of the recorded version that was not taken with `--force`. To go back further — an N-2 backup, or any specific one — list the candidates and name one
 explicitly:
 
 ```bash
@@ -72,9 +72,7 @@ kubectl -n velero get backups.velero.io -l ai-solutions.io/backup-profile=erag \
   -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,COMPLETED:.status.completionTimestamp \
   --sort-by=.status.completionTimestamp
 
-# add -e velero_restore_from=<name> to the restore invocation above, e.g.:
-#   ... ext/enterprise.ai-erag/deployment/backup.yaml \
-#       -e backup_action=restore -e backup_confirm=yes -e velero_restore_from=backup-erag-20260910t120000
+./run_backup.sh restore erag --env <name> --from backup-erag-20260910t120000
 ```
 
 Naming one this way is the only thing that changes: the cleanup, the restore order, and every
@@ -161,16 +159,20 @@ kubectl exec -n vdb <redis-pod> -c redis -- redis-cli -a "$REDIS_PASSWORD" clust
 
 ## The pre-upgrade gate
 
-With `backup_enabled: true`, an upgrade refuses to start unless there is a `Completed` backup for the
-running version, no older than `upgrade_backup_max_age_hours` (default 6):
+There is no `upgrade` command: running `install erag` from a newer release over a deployed one is the
+upgrade. With `backup_enabled: true`, the installer's `backup-freshness` check refuses it unless there is a
+`Completed` backup of the **installed** version, no older than `upgrade_backup_max_age_hours` (default 6):
 
 ```bash
-./es_auto_installer.sh upgrade erag --env <name>
+./toolkit_manager.sh install erag --env <name>
 #   refuses without a fresh backup, and says so
 
-./es_auto_installer.sh upgrade erag --env <name> -- -e allow_upgrade_without_backup=true
-#   explicit override
+./toolkit_manager.sh install erag --env <name> --force
+#   explicit override; the run is recorded as forced
 ```
+
+`-e upgrade_backup_max_age_hours=<n>` after `--` changes the window. See
+the [upgrade guide](https://github.com/intel/toolkit-manager/blob/main/docs/deployment/upgrade.md) for the other upgrade checks.
 
 The gate is skipped, not failed, when `backup_enabled` is false — demanding a restore point from a
 deployment that was never configured to produce one would only teach operators to reach for the
@@ -185,7 +187,7 @@ override.
 | Every test in the backup-restore suite fails, unrelated to backup itself | An unrelated aggregated API (commonly `custom.metrics.k8s.io`, if it has joined Istio ambient) can fail cluster-wide discovery. The suite binds the Velero/CSI kinds it needs explicitly so this cannot take it down — but a bare `kubectl api-resources` hanging or erroring is the same underlying symptom |
 | A question answerable only from restored data fails or hangs after a restore, while every pod is `Running` | Check the vector store's cluster state (see above) before assuming the restore failed — a healthy-looking `Running` pod can still be part of a cluster with a chunk of its keyspace unreachable |
 | Login fails with a bare `401` shortly into a test run, on a cluster that was never restored | The generated-credentials Secret was regenerated by a later plain re-install while the identity database (on its own persistent volume) kept the earlier password. Rotate to a new password — Keycloak's password-history policy refuses to reset a user back to one it has already held |
-| An upgrade refuses even though a backup was just taken | Check the backup's version label matches the running version, and that it is newer than `upgrade_backup_max_age_hours` — a backup taken for a different release does not satisfy the gate |
+| An upgrade refuses even though a backup was just taken | Check the backup's version label matches the installed version, and that it is newer than `upgrade_backup_max_age_hours` — a backup taken with `--force`, or for a different release, does not satisfy the gate |
 
 ## Known limitations
 
@@ -198,6 +200,6 @@ override.
 
 ## Related docs
 
-[Configuration](../customize/configuration.md#backup-and-restore) (`backup_enabled` and the upgrade
-gate settings), the platform's `docs/customize/configuration.md` (`velero_enabled`,
-`storage_backend`), [Troubleshooting](troubleshooting.md) (issues unrelated to backup specifically).
+[Configuration](../configuration/configuration.md#backup-and-restore) (`backup_enabled` and the upgrade
+gate settings), the platform's `docs/configuration/configuration.md` (`velero_enabled`,
+`storage_backend`), [Troubleshooting](../faq-and-troubleshooting/troubleshooting.md) (issues unrelated to backup specifically).

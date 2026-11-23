@@ -1,18 +1,18 @@
 # Glossary
 
-[← Docs Index](README.md)
+[← Docs index](../README.md)
 
 Terms used across this documentation, in alphabetical order.
 
 ---
 
-**Ambient mesh.** The sidecar-free mode of Istio used by the platform. Traffic between services is encrypted with mutual TLS by a per-node proxy (ztunnel) instead of a proxy container in every pod. See [Mesh](reference/mesh.md).
+**Ambient mesh.** The sidecar-free mode of Istio used by the platform. Traffic between services is encrypted with mutual TLS by a per-node proxy (ztunnel) instead of a proxy container in every pod. See [Mesh](service-mesh.md).
 
 **APISIX.** The API gateway in front of the RAG services. It terminates client requests to the pipeline and applies the access rules tied to your Keycloak session.
 
 **Chunking.** Splitting a document into passages small enough to embed and retrieve individually. Chunk size and overlap decide how much context a single retrieval hit carries.
 
-**Component.** One unit the installer deploys, backed by an Ansible role. RAG components are named `app_*`, for example `app_pipeline`, `app_edp`, `app_ui`. Listed in [Architecture](reference/architecture.md).
+**Component.** One unit the installer deploys, backed by an Ansible role. RAG components are named `app_*`, for example `app_pipeline`, `app_edp`, `app_ui`. Listed in [Architecture](architecture.md).
 
 **EDP (Enhanced Data Preparation).** The ingestion pipeline: it watches an object store or SharePoint, extracts text from PDF and Office documents, chunks it, embeds it, and writes the vectors to the vector database.
 
@@ -20,25 +20,25 @@ Terms used across this documentation, in alphabetical order.
 
 **Environment (`env/<name>/`).** One deployment's state: configuration, model catalog, kubeconfig, credentials, and logs. Selected with `--env`; defaults to `local`. Environments are independent, and install and teardown are always scoped to one.
 
-**Flavour.** The preset that `init erag --flavour <name>` seeds `config.erag.yaml` from: `chatqna`, `docsum`, `translation`, `audioqna`, or `pl_chatqna`. See [Pipelines](deploy/pipelines.md).
+**Flavour.** The preset that `init erag --flavour <name>` seeds `config.erag.yaml` from: `chatqna`, `docsum`, `translation`, `audioqna`, `pl_chatqna`, or `chatqna_intel_gpu` (experimental). See [Pipelines](../deployment/pipelines.md).
 
 **GMC (GenAI Microservices Connector).** The Kubernetes operator, with its own custom resources, that composes individual microservices into a running pipeline according to a service-graph definition and routes requests through the steps in order.
 
 **Guardrails.** Scanning steps around the LLM. The input guardrail inspects the prompt before generation, the output guardrail inspects the answer before it reaches the user.
 
-**HPA (Horizontal Pod Autoscaler).** The Kubernetes controller that adds and removes replicas of a service under load. Enabled by default via `hpa_enabled`, and disabled for minimum-hardware deployments. See [Performance](operate/performance.md).
+**HPA (Horizontal Pod Autoscaler).** The Kubernetes controller that adds and removes replicas of a service under load. Enabled by default via `hpa_enabled`, and disabled for minimum-hardware deployments. See [Performance](../configuration/performance.md).
 
 **Intel® Inference Toolkit.** Serves the models over an OpenAI-compatible endpoint using KServe with vLLM or OpenVINO™ Model Server. Toolkit Manager clones it into `ext/enterprise.ai-inference`. The installer target is `inference`.
 
 **Ingestion.** Getting documents into the system so they can be retrieved: upload or sync, extract, chunk, embed, index. Handled by EDP.
 
-**Keycloak.** The identity provider. It issues the tokens the gateway checks on every request, and can federate to Microsoft Entra ID or Active Directory. See [Authentication](customize/auth.md).
+**Keycloak.** The identity provider. It issues the tokens the gateway checks on every request, and can federate to Microsoft Entra ID or Active Directory. See [Authentication](../configuration/auth.md).
 
 **KServe.** The Kubernetes model-serving framework used by Intel® Inference Toolkit to run model servers and expose them as cluster services.
 
 **Installer target.** A group of components installed as a unit, in dependency order: `infrastructure`, `platform`, `inference`, `erag`. `inference` is Intel® Inference Toolkit. `erag` is Intel® Chatbot Toolkit. Installing one target pulls in the targets it depends on.
 
-**MCP (Model Context Protocol).** A protocol that lets AI agents discover and call tools. The MCP gateway exposes retrieval and ingestion as such tools; off by default. See [MCP](customize/mcp.md).
+**MCP (Model Context Protocol).** A protocol that lets AI agents discover and call tools. The MCP gateway exposes retrieval and ingestion as such tools; off by default. See [MCP](../configuration/mcp.md).
 
 **Model catalog (`models-rag.yaml`).** The per-environment list of servable models with their runtime, CPU and memory sizing, and server arguments. `inference_models` in `config.erag.yaml` selects entries from it by name.
 
@@ -62,7 +62,7 @@ Terms used across this documentation, in alphabetical order.
 
 **Target.** What you pass to `install`, `teardown`, or `validate`: an installer target such as `erag`, or a single component such as `app_pipeline`. Dependencies are resolved automatically unless you pass `--only`.
 
-**Variant.** A modification of a pipeline type: `base`, `query-rewrite`, `output_guard`, `retrieve-rerank`, or `upload`. Variants add or remove steps and change which models are needed. See [Pipelines](deploy/pipelines.md#pipeline-variants).
+**Variant.** A modification of a pipeline type: `base`, `query-rewrite`, `output_guard`, `retrieve-rerank`, or `upload`. Variants add or remove steps and change which models are needed. See [Pipelines](../deployment/pipelines.md#pipeline-variants).
 
 **Vector database.** The store that holds embeddings and answers similarity queries. Selectable with `vector_databases_vector_store`: `redis-cluster` (default), `mssql`, or `pgvector`.
 

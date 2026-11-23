@@ -22,7 +22,7 @@
 # backup with `-e velero_restore_from=<name>`.
 #
 # Requires the core repo's velero component installed and a StorageClass that can
-# snapshot. See docs/operate/backup.md.
+# snapshot. See docs/deployment/backup-and-restore.md.
 # =============================================================================
 
 - name: "Backup / Restore"

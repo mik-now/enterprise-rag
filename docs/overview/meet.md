@@ -1,6 +1,6 @@
 # Meet Intel® Chatbot Toolkit
 
-[← Docs Index](../README.md)
+[← Docs index](../README.md)
 
 The theory before the commands: what this is, why it exists, and when you would choose it.
 
@@ -37,7 +37,7 @@ You clone **one** repository and run every command from its root. The installer 
 ```
 github.com/intel/toolkit-manager      <- start here; run all commands from this root
   |
-  |-- es_auto_installer.sh      the single entry point (configure / init / install / teardown)
+  |-- toolkit_manager.sh      the single entry point (configure / init / install / teardown)
   |-- env/<name>/               your configuration, kubeconfig, credentials, and logs
   `-- ext/                      cloned automatically by `init erag`
         |-- enterprise.ai-inference    model serving: KServe, vLLM, OpenVINO Model Server
@@ -45,7 +45,7 @@ github.com/intel/toolkit-manager      <- start here; run all commands from this 
 ```
 
 > [!IMPORTANT]
-> Do not clone this repository directly to deploy it. Clone the Toolkit Manager repository, run `./es_auto_installer.sh init erag`, and it will fetch this one into `ext/` at a pinned revision. Every command in this documentation is run from the Toolkit Manager repo root.
+> Do not clone this repository directly to deploy it. Clone the Toolkit Manager repository, run `./toolkit_manager.sh init erag`, and it will fetch this one into `ext/` at a pinned revision. Every command in this documentation is run from the Toolkit Manager repo root.
 
 ## What gets deployed
 
@@ -59,14 +59,14 @@ storage             Keycloak       vLLM / OVMS   vector database, guardrails,
                     observability
 ```
 
-You choose what the application does by selecting a **flavour** at init time: conversational retrieval (`chatqna`, the default), document summarization (`docsum`), translation (`translation`), voice (`audioqna`), or Polish-language retrieval (`pl_chatqna`). Flavours and their variants are described in [Pipelines](../deploy/pipelines.md).
+You choose what the application does by selecting a **flavour** at init time: conversational retrieval (`chatqna`, the default), document summarization (`docsum`), translation (`translation`), voice (`audioqna`), Polish-language retrieval (`pl_chatqna`), or ChatQnA with the LLM on an Intel GPU (`chatqna_intel_gpu`, experimental). Flavours and their variants are described in [Pipelines](../deployment/pipelines.md).
 
 ## Start here
 
 | You want to | Go to |
 |---|---|
-| Check whether your hardware qualifies | [Prerequisites](../quickstart/prerequisites.md) |
-| Deploy it now | [Quick Start](../quickstart/quickstart.md) |
+| Check whether your hardware qualifies | [Prerequisites](../getting-started/prerequisites.md) |
+| Deploy it now | [Quick Start](../getting-started/quickstart.md) |
 | Understand the components before deploying | [Architecture](../reference/architecture.md) |
-| Know what a term means | [Glossary](../glossary.md) |
-| Skim common questions | [FAQ](../faq.md) |
+| Know what a term means | [Glossary](../reference/glossary.md) |
+| Skim common questions | [FAQ](../faq-and-troubleshooting/frequently-asked-questions.md) |

@@ -1,6 +1,6 @@
 # Intel® Chatbot Toolkit E2E benchmark
 ### Deploy Intel® Chatbot Toolkit and Adjust the parameters
-Before running the E2E benchmark, ensure that Intel® Chatbot Toolkit is deployed and configured with the recommended parameters as outlined in the [Performance tuning tips](../../../../../docs/operate/performance.md) guide.
+Before running the E2E benchmark, ensure that Intel® Chatbot Toolkit is deployed and configured with the recommended parameters as outlined in the [Performance tuning tips](../../../../../docs/configuration/performance.md) guide.
 
 ### Test prerequisites
 In order to be able to run the e2e performance benchmark you need to:
