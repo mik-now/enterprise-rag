@@ -2,18 +2,18 @@
 # Intel® Chatbot Toolkit
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Installed and operated by: Toolkit Manager](https://img.shields.io/badge/Installed%20and%20operated%20by-Toolkit%20Manager-0068B5)](https://github.com/intel/enterprise-ai-solutions)
+[![Installed and operated by: Toolkit Manager](https://img.shields.io/badge/Installed%20and%20operated%20by-Toolkit%20Manager-0068B5)](https://github.com/intel/toolkit-manager)
 [![Platform: Intel® Xeon®](https://img.shields.io/badge/Platform-Intel%C2%AE%20Xeon%C2%AE-0068B5)](https://www.intel.com/xeon)
 [![Pipelines: ChatQnA · DocSum · AudioQnA](https://img.shields.io/badge/Pipelines-ChatQnA%20%C2%B7%20DocSum%20%C2%B7%20AudioQnA-purple)](docs/deploy/pipelines.md)
 [![Identity: Keycloak](https://img.shields.io/badge/Identity-Keycloak%20OIDC-orange)](https://www.keycloak.org)
 
-**Turn your enterprise documents into a governed, production-ready AI assistant on Intel® Xeon® CPUs. Toolkit Manager installs and operates this toolkit.**
+**Turn your documents into a governed, production-ready AI assistant on Intel® Xeon® CPUs. Toolkit Manager installs and operates this toolkit.**
 
 > Ships the Ansible roles, Helm charts, and composable pipeline definitions that deploy a full RAG application - document ingestion, vector search, reranking, guardrails, chat history, and a web UI - wired into the platform's identity, gateway, storage, and observability.
 
 > [!IMPORTANT]
 > **This repository is not used on its own.**
-> [**Toolkit Manager**](https://github.com/intel/enterprise-ai-solutions)
+> [**Toolkit Manager**](https://github.com/intel/toolkit-manager)
 > installs and operates it. Install the platform first. Toolkit Manager clones this repository to
 > `ext/enterprise.ai-erag/` and brings up the Kubernetes cluster, the platform services
 > (cert-manager, Istio, MetalLB, Envoy Gateway, PostgreSQL, Keycloak,
@@ -30,7 +30,7 @@ Pipelines are composed, not hardcoded. A flavour declares an ordered flow of ste
 
 > Want the full picture? See [Architecture](docs/reference/architecture.md) and [Pipelines](docs/deploy/pipelines.md).
 
-### What makes it enterprise-grade
+### What makes it production-ready
 
 - **Access control, not just an API key** - Keycloak OIDC single sign-on across the UI and Keycloak itself, a guardrail on every query by default, and opt-in role-based access control that scopes retrieval to the documents each user is cleared to see.
 - **Modular pipelines, not a monolith** - a flavour declares an ordered flow of steps, the composer renders it into a `GMConnector` resource, and the operator reconciles the microservices behind it. Changing retrieval strategy or adding output guardrails is a config edit, not a rewrite.
@@ -67,8 +67,8 @@ See the [Architecture reference](docs/reference/architecture.md) for the compone
 `init erag` clones this repo and Intel® Inference Toolkit, at the revisions the platform pins, and seeds the configuration for your chosen pipeline. `install erag` then brings up the platform underneath and deploys Intel® Chatbot Toolkit on top.
 
 ```bash
-git clone https://github.com/intel/enterprise-ai-solutions.git
-cd enterprise-ai-solutions
+git clone https://github.com/intel/toolkit-manager.git
+cd toolkit-manager
 
 ./es_auto_installer.sh configure     # one-time machine prep (Python 3.11+, yq, kubectl, helm)
 ./es_auto_installer.sh init erag     # clone this toolkit and its dependencies
@@ -206,9 +206,9 @@ If you want to contribute to the project, please refer to the guide in [CONTRIBU
 ## Links
 
 - [Documentation Index](docs/README.md)
-- [GitHub Repository](https://github.com/intel/enterprise-rag)
-- [Toolkit Manager](https://github.com/intel/enterprise-ai-solutions) — installs and operates this toolkit
-- [Intel® Inference Toolkit](https://github.com/intel/enterprise-inference)
+- [GitHub Repository](https://github.com/intel/chatbot-toolkit)
+- [Toolkit Manager](https://github.com/intel/toolkit-manager) — installs and operates this toolkit
+- [Intel® Inference Toolkit](https://github.com/intel/inference-toolkit)
 - [Architecture](docs/reference/architecture.md)
 
 ---

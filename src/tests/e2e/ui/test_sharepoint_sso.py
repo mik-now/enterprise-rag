@@ -12,7 +12,7 @@ when users authenticate via SSO (Azure AD / Entra ID through Keycloak broker).
 Unlike Tier 1 tests (test_sharepoint_sites.py) which use local Keycloak
 accounts and focus on UI dialog mechanics, these tests:
 
-1. Authenticate via the Enterprise SSO login flow (Keycloak -> Azure AD)
+1. Authenticate via the SSO login flow (Keycloak -> Azure AD)
 2. Verify site-level RBAC filtering (admin sees admin-only sites, user doesn't)
 3. Test cross-platform file lifecycle (Graph API upload -> sync -> ERAG UI)
 4. Validate "Open" file links point to real SharePoint URLs
@@ -111,7 +111,7 @@ _TEST_FILE = os.path.join(
 @pytest.mark.asyncio
 async def test_sso_admin_login_reaches_chat(sso_admin_helper):
     """
-    Verify SSO admin can log in via Enterprise SSO and reach the chat page.
+    Verify SSO admin can log in via SSO and reach the chat page.
 
     Steps:
     1. Login via SSO flow (Keycloak -> Azure AD -> redirect back)
@@ -140,7 +140,7 @@ async def test_sso_admin_login_reaches_chat(sso_admin_helper):
 @pytest.mark.asyncio
 async def test_sso_user_login_reaches_chat(sso_user_helper):
     """
-    Verify SSO user can log in via Enterprise SSO and reach the chat page.
+    Verify SSO user can log in via SSO and reach the chat page.
 
     Steps:
     1. Login via SSO flow as regular user
@@ -770,7 +770,7 @@ async def test_sso_user_can_chat_with_sharepoint_knowledge(sso_user_helper):
 @pytest.mark.asyncio
 async def test_sso_maintainer_login_reaches_chat(sso_maintainer_helper):
     """
-    Verify SSO maintainer can log in via Enterprise SSO and reach the chat page.
+    Verify SSO maintainer can log in via SSO and reach the chat page.
 
     Steps:
     1. Login via SSO flow as maintainer (Keycloak -> Azure AD -> redirect)

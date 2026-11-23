@@ -251,11 +251,11 @@ def sso_maintainer_credentials(sp_credentials):
 async def _perform_sso_login(
     page, base_url: str, email: str, password: str, timeout: int = 60000
 ) -> str:
-    """Perform SSO login: Keycloak -> Enterprise SSO link -> Azure AD -> back to app.
+    """Perform SSO login: Keycloak -> SSO link -> Azure AD -> back to app.
 
     This handles the full redirect chain:
     1. Navigate to app (redirects to Keycloak login page)
-    2. Click the identity provider link ("Enterprise SSO")
+    2. Click the identity provider link ("SSO Login")
     3. Fill Microsoft Entra ID email + password
     4. Handle "Stay signed in?" prompt
     5. Wait for redirect back to the application
@@ -288,11 +288,11 @@ async def _perform_sso_login(
     except PlaywrightTimeout:
         # Fallback: try finding link by text content matching the alias
         sso_link = page.locator(
-            f'a:has-text("Enterprise SSO"), a:has-text("{sso_alias}")'
+            f'a:has-text("SSO Login"), a:has-text("{sso_alias}")'
         )
         await sso_link.wait_for(state="visible", timeout=5000)
 
-    logger.info("SSO login: clicking Enterprise SSO link")
+    logger.info("SSO login: clicking SSO link")
     await sso_link.click()
 
     # Step 2: Microsoft Entra ID login page.
@@ -391,7 +391,7 @@ async def _perform_sso_login(
 async def sso_admin_helper(page, sso_admin_credentials):
     """ChatUIHelper authenticated via SSO as admin.
 
-    Uses the Enterprise SSO (Azure AD) login flow instead of local Keycloak
+    Uses the SSO (Azure AD) login flow instead of local Keycloak
     credentials. The SSO admin account must be in the erag-admins group in
     Azure AD to receive admin permissions in ERAG.
     """

@@ -119,7 +119,7 @@ curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H 
 ## Storage Synchronization
 If the configured S3-compatible storage does not support bucket notifications, files uploaded to the storage will not be automatically registered in the EDP database, and they won't be visible in the Intel® Chatbot Toolkit UI.
 
-To address this limitation, Enterprise DataPrep provides a pull-based synchronization mechanism. When enabled, it periodically scans the configured storage and updates the internal database accordingly.
+To address this limitation, Enhanced Dataprep Pipeline (EDP) provides a pull-based synchronization mechanism. When enabled, it periodically scans the configured storage and updates the internal database accordingly.
 
 To use it, edit the [deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml) file and set the `celery.config.scheduledSync.enabled` to `true`.
 

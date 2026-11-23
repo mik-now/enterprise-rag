@@ -1314,7 +1314,7 @@ fi
 # OIDC Identity Provider (if configured)
 if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
   log_info "Configuring OIDC identity provider..."
-  create_oidc_config "$KEYCLOAK_REALM" "$OIDC_ENDPOINT" "$OIDC_ALIAS" "Enterprise SSO Login" "$OIDC_CLIENT_ID" "$OIDC_CLIENT_SECRET"
+  create_oidc_config "$KEYCLOAK_REALM" "$OIDC_ENDPOINT" "$OIDC_ALIAS" "SSO Login" "$OIDC_CLIENT_ID" "$OIDC_CLIENT_SECRET"
 
   # Create SSO realm roles and map them to client roles
   create_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin"
