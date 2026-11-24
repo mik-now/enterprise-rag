@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from prometheus_client import start_http_server
 from prometheus_fastapi_instrumentator import Instrumentator
 from uvicorn import Config, Server
 
@@ -101,7 +102,11 @@ class HTTPService(BaseService):
         self.validate_methods = validate_methods
 
         self._app = self._create_app()
-        Instrumentator().instrument(self._app, latency_lowr_buckets=(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 7.5, 10, 30, 60)).expose(self._app)
+        # With METRICS_PORT, /metrics is served apart from the API, so a scraper can reach it without the API.
+        self.metrics_port = os.getenv("METRICS_PORT")
+        instrumentator = Instrumentator().instrument(self._app, latency_lowr_buckets=(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 7.5, 10, 30, 60))
+        if not self.metrics_port:
+            instrumentator.expose(self._app)
 
     @property
     def app(self):
@@ -213,6 +218,9 @@ class HTTPService(BaseService):
         )
         self.logger.info(f"Uvicorn server setup on port {self.primary_port}")
         await self.server.setup_server()
+        if self.metrics_port:
+            start_http_server(int(self.metrics_port), addr=self.host_address)
+            self.logger.info(f"Metrics served on port {self.metrics_port}")
         self.logger.info("HTTP server setup successful")
 
     async def execute_server(self):
