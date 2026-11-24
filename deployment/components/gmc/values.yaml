@@ -292,6 +292,8 @@ images:
 
 monitoring:
   enabled: true
+  # Port each usvc serves /metrics on (METRICS_PORT), apart from its API.
+  metricsPort: 9464
   # Namespace Grafana's sidecar watches for dashboard ConfigMaps.
   dashboardNamespace: monitoring
 

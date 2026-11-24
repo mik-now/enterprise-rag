@@ -165,13 +165,12 @@ ServiceMonitor document for a usvc manifest, rendered when monitoring is
 enabled. The controller applies it into the pipeline namespace with an owner-ref
 (GC with the step), so a monitor exists exactly for the steps a pipeline
 deploys and is removed with the GMConnector. It selects on the Service's own
-instance label and reads its named port.
-Usage: {{- include "manifest.serviceMonitor" (list .filename "<port-name>" .) }}
+instance label and scrapes its metrics port.
+Usage: {{- include "manifest.serviceMonitor" (list .filename .) }}
 */}}
 {{- define "manifest.serviceMonitor" -}}
 {{- $deploymentName := index . 0 -}}
-{{- $portName := index . 1 -}}
-{{- $context := index . 2 -}}
+{{- $context := index . 1 -}}
 {{- if $context.Values.monitoring.enabled }}
 ---
 apiVersion: monitoring.coreos.com/v1
@@ -186,8 +185,30 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: {{ $deploymentName }}
   endpoints:
-  - port: {{ $portName | quote }}
+  - port: metrics
 {{- end }}
+{{- end -}}
+
+{{/*
+The usvc serves /metrics on its own port, not the API's, so a mesh exception for
+an out-of-mesh scraper opens only the metrics. Appended last: GMC routes to
+the Service's first port.
+*/}}
+{{- define "manifest.metricsEnv" -}}
+METRICS_PORT: {{ .Values.monitoring.metricsPort | quote }}
+{{- end -}}
+
+{{- define "manifest.metricsServicePort" -}}
+- port: {{ .Values.monitoring.metricsPort }}
+  targetPort: metrics
+  protocol: TCP
+  name: metrics
+{{- end -}}
+
+{{- define "manifest.metricsContainerPort" -}}
+- name: metrics
+  containerPort: {{ .Values.monitoring.metricsPort }}
+  protocol: TCP
 {{- end -}}
 
 {{/*

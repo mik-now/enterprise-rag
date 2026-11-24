@@ -17,6 +17,10 @@ spec:
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: {{ .Values.service.name }}
+    - port: {{ .Values.monitoring.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
   selector:
     app.kubernetes.io/name: {{ include "chat-history.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}

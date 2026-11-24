@@ -10,6 +10,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.metricsEnv" . | nindent 2 }}
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   http_proxy: {{ .Values.proxy.http_proxy | quote }}
   https_proxy: {{ .Values.proxy.https_proxy | quote }}
@@ -32,6 +33,7 @@ spec:
       targetPort: 9001
       protocol: TCP
       name: docsum-usvc
+    {{- include "manifest.metricsServicePort" . | nindent 4 }}
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
@@ -105,6 +107,7 @@ spec:
             - name: docsum-usvc
               containerPort: 9001
               protocol: TCP
+            {{- include "manifest.metricsContainerPort" . | nindent 12 }}
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -137,5 +140,5 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-{{- include "manifest.serviceMonitor" (list .filename "docsum-usvc" .) }}
+{{- include "manifest.serviceMonitor" (list .filename .) }}
 

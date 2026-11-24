@@ -10,6 +10,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.metricsEnv" . | nindent 2 }}
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
 ---
 # Source: retriever-usvc/templates/service.yaml
@@ -29,6 +30,7 @@ spec:
       targetPort: 6620
       protocol: TCP
       name: retriever-usvc
+    {{- include "manifest.metricsServicePort" . | nindent 4 }}
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
@@ -131,6 +133,7 @@ spec:
             - name: retriever-usvc
               containerPort: 6620
               protocol: TCP
+            {{- include "manifest.metricsContainerPort" . | nindent 12 }}
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -167,5 +170,5 @@ spec:
           emptyDir: {}
         - name: user-cache
           emptyDir: {}
-{{- include "manifest.serviceMonitor" (list .filename "retriever-usvc" .) }}
+{{- include "manifest.serviceMonitor" (list .filename .) }}
 

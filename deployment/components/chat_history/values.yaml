@@ -101,3 +101,5 @@ apisix:
 # ServiceMonitor for Prometheus (discovered by core observability stack)
 monitoring:
   enabled: true
+  # Port the service serves /metrics on (METRICS_PORT), apart from its API.
+  metricsPort: 9464

@@ -90,6 +90,8 @@ spec:
           image: {{ .Values.image.chat_history.repository }}/{{ .Values.image.chat_history.name }}:{{ .Values.image.chat_history.tag }}
           imagePullPolicy: {{ .Values.image.chat_history.pullPolicy }}
           env:
+            - name: METRICS_PORT
+              value: {{ .Values.monitoring.metricsPort | quote }}
             # legacy MONGO_* envs still used in chat-history-svc
             - name: CHAT_HISTORY_MONGO_HOST
               value: "{{ .Values.ferretdb.nameOverride }}-ferretdb"
@@ -120,6 +122,8 @@ spec:
           ports:
             - name: http
               containerPort: 6012
+            - name: metrics
+              containerPort: {{ .Values.monitoring.metricsPort }}
           livenessProbe:
             httpGet:
               path: /v1/health_check

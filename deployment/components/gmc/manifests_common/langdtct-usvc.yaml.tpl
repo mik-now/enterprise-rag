@@ -10,6 +10,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.metricsEnv" . | nindent 2 }}
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   http_proxy: {{ .Values.proxy.http_proxy | quote }}
   https_proxy: {{ .Values.proxy.https_proxy | quote }}
@@ -32,6 +33,7 @@ spec:
     targetPort: 8001
     protocol: TCP
     name: langdtct-usvc
+  {{- include "manifest.metricsServicePort" . | nindent 2 }}
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
@@ -73,6 +75,7 @@ spec:
         - name: langdtct-usvc
           containerPort: 8001
           protocol: TCP
+        {{- include "manifest.metricsContainerPort" . | nindent 8 }}
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -105,5 +108,5 @@ spec:
       volumes:
       - name: tmp
         emptyDir: {}
-{{- include "manifest.serviceMonitor" (list .filename "langdtct-usvc" .) }}
+{{- include "manifest.serviceMonitor" (list .filename .) }}
 

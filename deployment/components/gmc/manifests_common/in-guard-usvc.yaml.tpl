@@ -10,6 +10,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.metricsEnv" . | nindent 2 }}
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   http_proxy: {{ .Values.proxy.http_proxy | quote }}
   https_proxy: {{ .Values.proxy.https_proxy | quote }}
@@ -34,6 +35,7 @@ spec:
       targetPort: 8050
       protocol: TCP
       name: in-guard-usvc
+    {{- include "manifest.metricsServicePort" . | nindent 4 }}
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
@@ -108,6 +110,7 @@ spec:
             - name: in-guard-usvc
               containerPort: 8050
               protocol: TCP
+            {{- include "manifest.metricsContainerPort" . | nindent 12 }}
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -199,4 +202,4 @@ spec:
         periodSeconds: 60
   {{- end }}
 {{- end }}
-{{- include "manifest.serviceMonitor" (list .filename "in-guard-usvc" .) }}
+{{- include "manifest.serviceMonitor" (list .filename .) }}
