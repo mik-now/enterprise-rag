@@ -86,11 +86,11 @@ See [models.md](models.md).
 | Setting | Default | Options |
 |---------|---------|---------|
 | `vector_databases_namespace` | `vdb` | |
-| `vector_databases_vector_store` | `redis-cluster` | `redis-cluster` \| `mssql` \| `milvus` |
+| `vector_databases_vector_store` | `milvus` | `milvus` \| `redis-cluster` \| `mssql` |
 | `vector_databases_vector_datatype` | `FLOAT32` | |
 | `vector_databases_vector_dims` | `768` | Auto-detected; override if detection fails |
 
-Backends: **redis-cluster** (production, 1M+ vectors, HA, scalable), **mssql** (SQL Server; RBAC unsupported; EULA prompt on deploy), **milvus**.
+Backends: **redis-cluster** (production, 1M+ vectors, HA, scalable), **mssql** (SQL Server; RBAC unsupported; EULA prompt on deploy), **milvus** (default). redis-cluster and mssql need a license acceptance on deploy, see [Licenses](#vector-store-licenses).
 
 Storage defaults: redis-cluster 8Gi per node (set `vector_databases_stores.redis-cluster.persistence.size` in `config.erag.yaml`), mssql and milvus 10Gi (`deployment/components/vector_databases/values.yaml`). Vector store needs more storage than file storage (text + embeddings).
 
@@ -115,13 +115,21 @@ kubectl exec -n vdb vdb-redis-cluster-0 -- redis-cli -a $REDIS_PASSWORD MODULE L
 
 A single Microsoft SQL Server Express Edition instance from Microsoft's official images. Express has feature and capacity limits (for example, 10 GB per database). Metrics are on port `4000`. Grafana dashboard: **VectorDB / Microsoft SQL Server**.
 
-You're responsible for accepting Microsoft's licensing terms (https://www.microsoft.com/en-us/useterms). With `mssql`, `install erag` stops and asks:
+You're responsible for accepting Microsoft's licensing terms (https://www.microsoft.com/en-us/useterms). See [Vector store licenses](#vector-store-licenses). `edp_rbac_enabled: true` with `mssql` fails the pre-run check: the connector can't filter results per user.
+
+### Vector store licenses
+
+`redis-cluster` (Redis 8: RSALv2 / SSPLv1 / AGPLv3, https://redis.io/legal/licenses/) and `mssql` need you to accept their license. `install erag` stops and asks, for example:
 
 ```text
-Do you accept the Microsoft SQL Server 2025 Express Edition EULA? [Y/N]
+Do you accept the Microsoft SQL Server 2025 EULA? [Y/N]
 ```
 
-Type `Y` and press ENTER. The install aborts unless you accept. To accept without the prompt, for example in automation, set `MSSQL_ACCEPT_EULA=Y` in the installer's environment.
+Type `Y` and press ENTER. The install aborts unless you accept. To answer without the prompt, for example in automation, set the store's variable in the installer's environment: `MSSQL_ACCEPT_EULA=Y` or `REDIS_ACCEPT_LICENSE=Y`. Any other value declines. `milvus` (Apache-2.0) needs no acceptance.
+
+### Changing the vector store
+
+The installer refuses to switch the store of an existing install, because the new store starts empty. Environments that never set `vector_databases_vector_store` were on `redis-cluster`, the old default: set `vector_databases_vector_store: "redis-cluster"` to keep it, or uninstall erag first to start on Milvus.
 
 ### Adding a vector database
 
@@ -237,7 +245,7 @@ inference_models:
 # edp_s3_compatible_access_key_id: ""
 # edp_s3_compatible_secret_access_key: ""
 # vector_databases_namespace: "vdb"
-# vector_databases_vector_store: "redis-cluster"
+# vector_databases_vector_store: "milvus"
 # vector_databases_vector_datatype: "FLOAT32"
 # vector_databases_vector_dims: 768
 # chattool_keycloak_oidc_endpoint: ""

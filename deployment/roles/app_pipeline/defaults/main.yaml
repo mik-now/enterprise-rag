@@ -70,7 +70,7 @@ ui_domain_name: "{{ base_domain_name | default('solutions.ai') }}"  # app_ui
 chattool_keycloak_default_path_prefix: "{{ keycloak_path | default('/keycloak') }}"  # app_keycloak_config
 chattool_keycloak_path_prefix: "{{ chattool_keycloak_default_path_prefix if (routing_mode | default('subdomain')) == 'path' else '' }}"  # app_keycloak_config
 ui_keycloak_realm: "ChatbotToolkit"      # app_ui
-vector_databases_vector_store: "redis-cluster"     # app_vector_databases
+vector_databases_vector_store: "milvus"     # app_vector_databases
 vector_databases_vector_datatype: "FLOAT32"        # app_vector_databases
 vector_databases_vector_dims: 768                  # app_vector_databases
 istio_enabled: false                               # global

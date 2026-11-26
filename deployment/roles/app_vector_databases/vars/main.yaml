@@ -1,0 +1,13 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Stores whose license the operator must accept before install (tasks/_license.yaml).
+__app_vector_databases_licenses:
+  mssql:
+    name: "Microsoft SQL Server 2025 EULA"
+    url: "https://www.microsoft.com/en-us/useterms"
+    env: "MSSQL_ACCEPT_EULA"
+  redis-cluster:
+    name: "Redis 8 license (RSALv2 / SSPLv1 / AGPLv3)"
+    url: "https://redis.io/legal/licenses/"
+    env: "REDIS_ACCEPT_LICENSE"

@@ -26,3 +26,14 @@
         'base_domain_name is required but not set. Please provide a value in the configuration file.'
       ] }}
   when: base_domain_name | default('') | length == 0
+
+# The mssql connector has no per-user filter, so RBAC would expose every document.
+- name: "app_pre_install | Add RBAC with mssql vector store issue"
+  ansible.builtin.set_fact:
+    configuration_issues: >-
+      {{ configuration_issues + [
+        'edp_rbac_enabled is true but vector_databases_vector_store is mssql, which does not support RBAC. Set edp_rbac_enabled: false or pick another vector store.'
+      ] }}
+  when:
+    - edp_rbac_enabled | default(false) | bool  # Foreign: owned by app_edp
+    - vector_databases_vector_store == 'mssql'

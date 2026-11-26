@@ -3,6 +3,34 @@
   ansible.builtin.set_fact:
     vector_databases_helm_override_values_path: "{{ rag_tmp_dir }}/{{ vector_databases_helm_release_name }}-override-values.yaml"
 
+- name: "app_vector_databases | install | Read the deployed release"
+  kubernetes.core.helm_info:
+    name: "{{ vector_databases_helm_release_name }}"
+    release_namespace: "{{ vector_databases_namespace }}"
+  register: _app_vector_databases_release
+
+# A default flip (redis-cluster -> milvus) must not silently replace a store holding data.
+- name: "app_vector_databases | install | Refuse to switch the vector store in place"
+  vars:
+    _v: "{{ _app_vector_databases_release.status['values'] | default({}) }}"
+    _deployed: >-
+      {{ 'mssql' if (_v.mssql.enabled | default(false) | bool)
+         else 'pgvector' if (_v.pgvector.enabled | default(false) | bool)
+         else _v.vectorStore | default('') }}
+  ansible.builtin.assert:
+    that: _deployed | length == 0 or _deployed == vector_databases_vector_store
+    fail_msg: >-
+      Vector store '{{ _deployed }}' is deployed but vector_databases_vector_store is
+      '{{ vector_databases_vector_store }}'. Set vector_databases_vector_store: "{{ _deployed }}"
+      in config.erag.yaml to keep it, or uninstall erag first to start on a new store.
+    quiet: true
+
+- name: "app_vector_databases | install | Gate the store's license"
+  ansible.builtin.include_tasks: _license.yaml
+  vars:
+    _app_vector_databases_license: "{{ __app_vector_databases_licenses[vector_databases_vector_store] }}"
+  when: vector_databases_vector_store in __app_vector_databases_licenses
+
 - name: "app_vector_databases | Ensure namespace exists"
   kubernetes.core.k8s:
     state: present
@@ -132,40 +160,6 @@
 - name: "app_vector_databases | Configure Mssql-like vector store"
   when: vector_databases_vector_store == 'mssql'
   block:
-    - name: "app_vector_databases | Read EULA env var"
-      ansible.builtin.set_fact:
-        mssql_eula_env: "{{ lookup('env', 'MSSQL_ACCEPT_EULA') | default('', true) }}"
-
-    - name: "app_vector_databases | Decide whether to prompt for EULA"
-      ansible.builtin.set_fact:
-        mssql_eula_need_prompt: "{{ mssql_eula_env == '' }}"
-
-    - name: "app_vector_databases | Set EULA accepted from env"
-      ansible.builtin.set_fact:
-        mssql_eula_accept: 'Y'
-      when: not mssql_eula_need_prompt
-
-    - name: "app_vector_databases | Ask the operator to accept the EULA"
-      ansible.builtin.pause:
-        prompt: |
-          Do you accept the Microsoft SQL Server 2025 {{ vector_databases_stores.mssql.mssql_pid }} Edition EULA? [Y/N]
-          Type Y to accept, N to decline. Press ENTER to confirm.
-      register: mssql_eula_prompt_result
-      until: mssql_eula_prompt_result.user_input is match('^[YyNn]$')
-      when: mssql_eula_need_prompt
-      retries: 5
-      delay: 0
-
-    - name: "app_vector_databases | Normalize input to uppercase"
-      ansible.builtin.set_fact:
-        mssql_eula_accept: "{{ mssql_eula_prompt_result.user_input | upper }}"
-      when: mssql_eula_need_prompt
-
-    - name: "app_vector_databases | Abort if EULA not accepted"
-      ansible.builtin.fail:
-        msg: "Microsoft SQL Server 2025 EULA not accepted. Aborting installation."
-      when: mssql_eula_accept != 'Y'
-
     - name: "app_vector_databases | Generate password"
       ansible.builtin.include_role:
         name: app_generate_password

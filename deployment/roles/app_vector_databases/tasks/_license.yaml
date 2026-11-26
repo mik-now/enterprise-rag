@@ -1,0 +1,32 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# app_vector_databases | license gate: stops the install unless the operator accepts the store's license.
+- name: "app_vector_databases | install | license | Read acceptance from the environment"
+  ansible.builtin.set_fact:
+    _app_vector_databases_license_env: "{{ lookup('ansible.builtin.env', _app_vector_databases_license.env) | default('', true) | trim | upper }}"
+
+- name: "app_vector_databases | install | license | Ask the operator to accept the license"
+  ansible.builtin.pause:
+    prompt: |
+      Do you accept the {{ _app_vector_databases_license.name }}? [Y/N]
+      Terms: {{ _app_vector_databases_license.url }}
+      Type Y to accept, N to decline. Press ENTER to confirm.
+      (Set {{ _app_vector_databases_license.env }}=Y to skip this prompt.)
+  register: _app_vector_databases_license_prompt
+  until: _app_vector_databases_license_prompt.user_input is match('^[YyNn]$')
+  retries: 5
+  delay: 0
+  when: _app_vector_databases_license_env | length == 0
+
+- name: "app_vector_databases | install | license | Record the answer"
+  ansible.builtin.set_fact:
+    _app_vector_databases_license_accept: "{{ _app_vector_databases_license_env or (_app_vector_databases_license_prompt.user_input | upper) }}"
+
+- name: "app_vector_databases | install | license | Abort unless accepted"
+  ansible.builtin.fail:
+    msg: >-
+      {{ _app_vector_databases_license.name }} not accepted
+      ({{ _app_vector_databases_license.env }}={{ _app_vector_databases_license_accept }}).
+      Aborting installation. Accept with Y, or pick another vector_databases_vector_store.
+  when: _app_vector_databases_license_accept != 'Y'

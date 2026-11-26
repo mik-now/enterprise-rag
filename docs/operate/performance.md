@@ -33,12 +33,12 @@ Set via `vector_databases_vector_store` in `env/<name>/config.erag.yaml`:
 ```yaml
 vector_databases_enabled: true
 vector_databases_namespace: vdb
-vector_databases_vector_store: redis-cluster   # redis-cluster | mssql | milvus
+vector_databases_vector_store: milvus   # milvus | redis-cluster | mssql
 ```
 
 Per-store Helm payloads live under the `vector_databases_stores` key (nested, because the chart consumes them shaped that way); everything else in `config.erag.yaml` is flat.
 
-Selecting `mssql` requires accepting the Microsoft SQL Server EULA during deployment. Role-based access control (RBAC) for vector databases is not supported when using `mssql`.
+Selecting `mssql` or `redis-cluster` requires accepting the store's license during deployment ([Vector store licenses](../customize/configuration.md#vector-store-licenses)). Role-based access control (RBAC) for vector databases is not supported when using `mssql`.
 
 ## Redis Vector Database Performance
 

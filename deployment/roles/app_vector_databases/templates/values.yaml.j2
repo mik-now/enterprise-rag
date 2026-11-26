@@ -35,7 +35,7 @@ vector_database_name: {{ vector_database_name | default("vdb") }}
 mssql:
   enabled: true
   config:
-    accept_eula: {{ mssql_eula_accept | quote }}
+    accept_eula: {{ _app_vector_databases_license_accept | quote }}
     mssql_pid: {{ mssql.mssql_pid | quote }}
 {% endif %}
 
