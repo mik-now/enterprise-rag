@@ -40,6 +40,6 @@
       vars:
         _sp_missing: >-
           {{ _chattool_oidc_empty_vars | intersect(['chattool_keycloak_oidc_endpoint',
-                                               'chattool_keycloak_oidc_client_id',
-                                               'chattool_keycloak_oidc_client_secret']) }}
+                                                   'chattool_keycloak_oidc_client_id',
+                                                   'chattool_keycloak_oidc_client_secret']) }}
       when: chattool_keycloak_oidc_tenant_id | default('', true) | string | trim | length > 0
